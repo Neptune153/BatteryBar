@@ -10,3 +10,4 @@ third_party/
 *.user
 .claude/
 CLAUDE.md
+compile_commands.json

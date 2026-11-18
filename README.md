@@ -1,4 +1,4 @@
-﻿# BatteryBar
+# BatteryBar
 
 在 Windows 任务栏上显示无线设备的电量：耳机、鼠标、键盘、手柄、手机。
 
@@ -65,25 +65,35 @@ BatteryBar.exe --quit      让正在运行的实例退出
 
 ## 从源码构建
 
-需要 **Visual Studio 2022**（含 C++ 桌面开发和 Windows SDK 10），CMake 随 Visual Studio 安装。
+需要 **Visual Studio 2022**（含 C++ 桌面开发和 Windows SDK 10）与 **CMake 3.25** 及以上；两者随 Visual
+Studio 安装程序装好即可，不需要额外组件。
+
+在 VS Code 中打开仓库并安装 CMake Tools 扩展，选择 MSVC 的 kit（如 `Visual Studio Community 2022 -
+amd64`），CMake 会按 `CMakePresets.json` 的默认预设配置到 `build/ninja`。构建与调试可直接在 VS Code 的
+CMake 侧栏完成，调试配置见 `.vscode/launch.json`。
+
+命令行构建：
 
 ```bat
-cmake -S . -B build\cmake
-cmake --build build\cmake --config Release
+cmake --preset ninja
+cmake --build --preset ninja
 ```
 
-产物在 `build\cmake\Release\BatteryBar.exe`。用 Visual Studio 打开 `build\cmake\BatteryBar.sln`
-也可以直接调试。
+产物在 `build\ninja\BatteryBar.exe`，增量构建通常在一两秒内完成。`ninja` 预设要求当前终端已加载 MSVC
+环境（VS Code 的 CMake Tools 会自动加载；单独开终端时用「x64 Native Tools Command Prompt for VS 2022」）。
 
-不使用 CMake 时的备选构建脚本：
+不便处理环境变量时可改用较慢的生成器：
 
 ```bat
-tools\build-msvc.bat
+cmake --preset vs2022
+cmake --build --preset vs2022
 ```
 
-脚本自行定位 `vcvars64.bat`，合并语言文件后编译链接到 `build\msvc\BatteryBar.exe`。
+产物在 `build\vs2022\Release\BatteryBar.exe`。
 
-MinGW 路径（`Makefile`）保留，需较新的 mingw-w64：旧版本缺少 `devpkey.h`，编译失败。
+不使用 CMake 时的备选脚本 `tools\build-msvc.bat` 会自行定位 `vcvars64.bat`，合并语言文件后链接到
+`build\msvc\BatteryBar.exe`。MinGW 路径（`Makefile`）保留，需较新的 mingw-w64：旧版本缺少 `devpkey.h`，
+编译失败。
 
 构建脚本会自动收集 `src/` 下的所有 `.cpp`，新增驱动不需要改构建文件。
 
