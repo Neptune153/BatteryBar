@@ -37,6 +37,10 @@ target_compile_definitions(BatteryBar PRIVATE UNICODE _UNICODE _WIN32_WINNT=0x0A
 if (MSVC)
     target_compile_definitions(BatteryBar PRIVATE NOMINMAX _CRT_SECURE_NO_WARNINGS)
     target_compile_options(BatteryBar PRIVATE /W3 /O1 /MT)
+    # res/app.rc already embeds res/app.manifest as RT_MANIFEST 1. The MSVC linker would generate
+    # and embed a second manifest with the same id, which fails as CVTRES CVT1100 (duplicate
+    # resource), so the generated one is turned off and the manifest in the resource is the only one.
+    target_link_options(BatteryBar PRIVATE /MANIFEST:NO)
 else ()
     target_compile_options(BatteryBar PRIVATE -Os -Wall -Wno-missing-field-initializers -ffunction-sections -fdata-sections)
     target_link_options(BatteryBar PRIVATE -static -municode -Wl,--gc-sections)
