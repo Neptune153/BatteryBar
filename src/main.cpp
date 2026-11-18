@@ -16,9 +16,12 @@
 #include "core/devices.h"
 #include "text/i18n.h"
 #include "text/labels.h"
+#include "app/settings.h"
 #include "app/widget/widget.h"
 
 namespace {
+
+using namespace settings;
 
 constexpr UINT WM_TRAY = WM_APP + 1;
 constexpr UINT WM_RESULTS = WM_APP + 2;
@@ -44,10 +47,8 @@ enum MenuId : UINT {
 enum DeviceCmd : UINT { DEV_TOGGLE, DEV_LEFT, DEV_RIGHT, DEV_STRIDE = 4 };
 
 const wchar_t* kAppName = L"Wireless Battery";
-const wchar_t* kRunKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 const wchar_t* kRunValue = L"WirelessBattery";
 
-const wchar_t* kSettingsKey = L"Software\\WirelessBattery";
 
 HINSTANCE g_inst;
 HWND g_hwnd;
@@ -82,158 +83,16 @@ HICON g_placeholderIcon = nullptr;
 
 // ---- helpers ----------------------------------------------------------------------------------
 
-UINT StableId(const std::wstring& key) {
-    UINT h = 2166136261u;
-    for (wchar_t c : key) { h ^= c; h *= 16777619u; }
-    return (h & 0x7FFFFFFF) | 0x100;
-}
-
-bool ReadLightTaskbar() {
-    DWORD v = 0, sz = sizeof(v);
-    if (RegGetValueW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-                     L"SystemUsesLightTheme", RRF_RT_REG_DWORD, nullptr, &v, &sz) == ERROR_SUCCESS)
-        return v != 0;
-    return false;
-}
-
-void ApplyMenuTheme(bool light) {
-    using SetPreferredAppModeFn = int(WINAPI*)(int);
-    using FlushMenuThemesFn = void(WINAPI*)();
-    static HMODULE ux = LoadLibraryExW(L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    static auto setMode = ux ? (SetPreferredAppModeFn)GetProcAddress(ux, MAKEINTRESOURCEA(135)) : nullptr;
-    static auto flush = ux ? (FlushMenuThemesFn)GetProcAddress(ux, MAKEINTRESOURCEA(136)) : nullptr;
-    if (setMode) setMode(light ? 3 : 2);
-    if (flush) flush();
-}
-
-std::wstring ExePath() {
-    wchar_t p[MAX_PATH];
-    GetModuleFileNameW(nullptr, p, MAX_PATH);
-    return p;
-}
-
-// Devices the user chose to hide (by key), stored as a REG_MULTI_SZ.
-std::set<std::wstring> g_hidden;
-
-void LoadHidden() {
-    DWORD size = 0;
-    if (RegGetValueW(HKEY_CURRENT_USER, kSettingsKey, L"HiddenDevices", RRF_RT_REG_MULTI_SZ, nullptr, nullptr, &size) != ERROR_SUCCESS || !size)
-        return;
-    std::vector<wchar_t> buf(size / sizeof(wchar_t) + 1, 0);
-    if (RegGetValueW(HKEY_CURRENT_USER, kSettingsKey, L"HiddenDevices", RRF_RT_REG_MULTI_SZ, nullptr, buf.data(), &size) != ERROR_SUCCESS)
-        return;
-    for (const wchar_t* p = buf.data(); *p; p += wcslen(p) + 1) g_hidden.insert(p);
-}
-
-void SaveHidden() {
-    std::wstring multi;
-    for (const auto& k : g_hidden) { multi += k; multi.push_back(L'\0'); }
-    multi.push_back(L'\0');
-    RegSetKeyValueW(HKEY_CURRENT_USER, kSettingsKey, L"HiddenDevices", REG_MULTI_SZ, multi.data(), (DWORD)(multi.size() * sizeof(wchar_t)));
-}
-
-bool IsHidden(const std::wstring& key) { return g_hidden.count(key) != 0; }
-
-// The user's left-to-right order (device keys), stored as a REG_MULTI_SZ. Devices not in it follow
-// in the default order (by type, then name).
-std::vector<std::wstring> g_order;
-
-void LoadOrder() {
-    DWORD size = 0;
-    if (RegGetValueW(HKEY_CURRENT_USER, kSettingsKey, L"DeviceOrder", RRF_RT_REG_MULTI_SZ, nullptr, nullptr, &size) != ERROR_SUCCESS || !size)
-        return;
-    std::vector<wchar_t> buf(size / sizeof(wchar_t) + 1, 0);
-    if (RegGetValueW(HKEY_CURRENT_USER, kSettingsKey, L"DeviceOrder", RRF_RT_REG_MULTI_SZ, nullptr, buf.data(), &size) != ERROR_SUCCESS)
-        return;
-    for (const wchar_t* p = buf.data(); *p; p += wcslen(p) + 1) g_order.push_back(p);
-}
-
-void SaveOrder() {
-    if (g_order.size() > 64) g_order.resize(64);  // forget long-gone devices
-    std::wstring multi;
-    for (const auto& k : g_order) { multi += k; multi.push_back(L'\0'); }
-    multi.push_back(L'\0');
-    RegSetKeyValueW(HKEY_CURRENT_USER, kSettingsKey, L"DeviceOrder", REG_MULTI_SZ, multi.data(), (DWORD)(multi.size() * sizeof(wchar_t)));
-}
-
 bool IsEntryHidden(const TrayEntry& e) {
     return IsHidden(e.st.key) || (g_hideLastKnown && (e.st.asleep || (e.st.percent < 0 && e.lastPct >= 0)));
 }
 
-bool LoadBoolSetting(const wchar_t* name, bool defaultVal) {
-    DWORD v = defaultVal ? 1 : 0, sz = sizeof(v);
-    RegGetValueW(HKEY_CURRENT_USER, kSettingsKey, name, RRF_RT_REG_DWORD, nullptr, &v, &sz);
-    return v != 0;
-}
-
-void SaveBoolSetting(const wchar_t* name, bool on) {
-    DWORD v = on ? 1 : 0;
-    RegSetKeyValueW(HKEY_CURRENT_USER, kSettingsKey, name, REG_DWORD, &v, sizeof(v));
-}
-
-int LoadIntSetting(const wchar_t* name, int defaultVal) {
-    DWORD v = (DWORD)defaultVal, sz = sizeof(v);
-    RegGetValueW(HKEY_CURRENT_USER, kSettingsKey, name, RRF_RT_REG_DWORD, nullptr, &v, &sz);
-    return (int)v;
-}
-
-void SaveIntSetting(const wchar_t* name, int val) {
-    DWORD v = (DWORD)val;
-    RegSetKeyValueW(HKEY_CURRENT_USER, kSettingsKey, name, REG_DWORD, &v, sizeof(v));
-}
-
-bool LoadWidgetMode() { return LoadBoolSetting(L"TaskbarWidget", true); }
-void SaveWidgetMode(bool on) { SaveBoolSetting(L"TaskbarWidget", on); }
-bool LoadHideLastKnown() { return LoadBoolSetting(L"HideLastKnownDevices", false); }
-void SaveHideLastKnown(bool on) { SaveBoolSetting(L"HideLastKnownDevices", on); }
-// Opacity in percent. The earlier versions had an on/off switch only ("WidgetBackground"); its value
-// still turns the plate on here, at the default opacity.
-int LoadWidgetBackground() {
-    if (!LoadBoolSetting(L"WidgetBackground", false)) return 0;
-    return LoadIntSetting(L"WidgetBackgroundOpacity", 60);
-}
-void SaveWidgetBackground(int percent) {
-    SaveBoolSetting(L"WidgetBackground", percent > 0);
-    SaveIntSetting(L"WidgetBackgroundOpacity", percent);
-}
-std::wstring LoadWidgetMonitor() {
-    wchar_t buf[512] = {};
-    DWORD size = sizeof(buf) - sizeof(wchar_t);
-    if (RegGetValueW(HKEY_CURRENT_USER, kSettingsKey, L"WidgetMonitor", RRF_RT_REG_SZ, nullptr, buf, &size) == ERROR_SUCCESS && buf[0])
-        return buf;
-    return LoadBoolSetting(L"OtherTaskbars", true) ? L"all" : L"main";  // the earlier on/off toggle
-}
-void SaveWidgetMonitor(const std::wstring& v) {
-    RegSetKeyValueW(HKEY_CURRENT_USER, kSettingsKey, L"WidgetMonitor", REG_SZ, v.c_str(), (DWORD)((v.size() + 1) * sizeof(wchar_t)));
-}
 void SetWidgetMonitor(const std::wstring& v) {
     g_widgetMonitor = v;
     SaveWidgetMonitor(v);
     widget::SetMonitorChoice(v);
 }
-bool LoadStacked() { return LoadBoolSetting(L"StackedLayout", false); }
-void SaveStacked(bool on) { SaveBoolSetting(L"StackedLayout", on); }
-bool LoadBrandColors() { return LoadBoolSetting(L"BrandColors", false); }
-void SaveBrandColors(bool on) { SaveBoolSetting(L"BrandColors", on); }
 
-bool AutostartEnabled() {
-    wchar_t buf[MAX_PATH * 2];
-    DWORD sz = sizeof(buf);
-    if (RegGetValueW(HKEY_CURRENT_USER, kRunKey, kRunValue, RRF_RT_REG_SZ, nullptr, buf, &sz) != ERROR_SUCCESS) return false;
-    return _wcsicmp(buf, (L"\"" + ExePath() + L"\"").c_str()) == 0;
-}
-
-void SetAutostart(bool on) {
-    HKEY k;
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, kRunKey, 0, KEY_SET_VALUE, &k) != ERROR_SUCCESS) return;
-    if (on) {
-        std::wstring v = L"\"" + ExePath() + L"\"";
-        RegSetValueExW(k, kRunValue, 0, REG_SZ, (const BYTE*)v.c_str(), (DWORD)((v.size() + 1) * sizeof(wchar_t)));
-    } else {
-        RegDeleteValueW(k, kRunValue);
-    }
-    RegCloseKey(k);
-}
 
 // ---- icon rendering ---------------------------------------------------------------------------
 // Draws the percentage as large digits with a small level bar underneath. GDI text is rendered
@@ -371,7 +230,7 @@ std::wstring StatusText(const TrayEntry& e) {
     return t;
 }
 
-bool TrayCall(DWORD msg, UINT uid, HICON icon, const std::wstring& tip, const wchar_t* infoTitle = nullptr,
+bool SendTrayMessage(DWORD msg, UINT uid, HICON icon, const std::wstring& tip, const wchar_t* infoTitle = nullptr,
               const std::wstring& info = L"") {
     NOTIFYICONDATAW nid{ sizeof(nid) };
     nid.hWnd = g_hwnd;
@@ -394,7 +253,7 @@ bool TrayCall(DWORD msg, UINT uid, HICON icon, const std::wstring& tip, const wc
     return ok != FALSE;
 }
 
-void TrayDelete(UINT uid) {
+void RemoveTrayIcon(UINT uid) {
     NOTIFYICONDATAW nid{ sizeof(nid) };
     nid.hWnd = g_hwnd;
     nid.uID = uid;
@@ -403,17 +262,17 @@ void TrayDelete(UINT uid) {
 
 void UpdatePlaceholder() {
     if (g_useWidget) {
-        if (g_placeholder) { TrayDelete(PLACEHOLDER_ID); g_placeholder = false; }
+        if (g_placeholder) { RemoveTrayIcon(PLACEHOLDER_ID); g_placeholder = false; }
         return;
     }
     bool any = false;
     for (auto& [k, e] : g_entries) any |= e.added;
     if (!any && !g_placeholder) {
         if (!g_placeholderIcon) g_placeholderIcon = RenderIcon(L"-", -1, Foreground(), Foreground(), true);
-        TrayCall(NIM_ADD, PLACEHOLDER_ID, g_placeholderIcon, std::wstring(L"Wireless Battery\n") + T(L"No devices with battery info found"));
+        SendTrayMessage(NIM_ADD, PLACEHOLDER_ID, g_placeholderIcon, std::wstring(L"Wireless Battery\n") + T(L"No devices with battery info found"));
         g_placeholder = true;
     } else if (any && g_placeholder) {
-        TrayDelete(PLACEHOLDER_ID);
+        RemoveTrayIcon(PLACEHOLDER_ID);
         g_placeholder = false;
     }
 }
@@ -422,7 +281,7 @@ void ApplyEntry(TrayEntry& e) {
     const auto& s = e.st;
     bool visible = s.connected && !g_useWidget && !IsEntryHidden(e);
     if (!visible) {
-        if (e.added) { TrayDelete(e.uid); e.added = false; }
+        if (e.added) { RemoveTrayIcon(e.uid); e.added = false; }
         return;
     }
     int shown = s.percent >= 0 ? s.percent : e.lastPct;
@@ -445,7 +304,7 @@ void ApplyEntry(TrayEntry& e) {
         infoTitle = T(L"Low battery");
         info = TF(L"{name} is at {percent}%", { { L"name", s.name }, { L"percent", std::to_wstring(s.percent) } });
     }
-    TrayCall(e.added ? NIM_MODIFY : NIM_ADD, e.uid, e.icon, tip, infoTitle, info);
+    SendTrayMessage(e.added ? NIM_MODIFY : NIM_ADD, e.uid, e.icon, tip, infoTitle, info);
     e.added = true;
 }
 
@@ -470,8 +329,8 @@ std::vector<TrayEntry*> OrderedEntries(bool shownOnly) {
     for (auto& [k, e] : g_entries)
         if (!shownOnly || IsShown(e)) list.push_back(&e);
     auto rank = [](const TrayEntry* e) {
-        auto it = std::find(g_order.begin(), g_order.end(), e->st.key);
-        return it == g_order.end() ? INT_MAX : (int)(it - g_order.begin());
+        auto it = std::find(OrderKeys().begin(), OrderKeys().end(), e->st.key);
+        return it == OrderKeys().end() ? INT_MAX : (int)(it - OrderKeys().begin());
     };
     std::stable_sort(list.begin(), list.end(), [&](const TrayEntry* a, const TrayEntry* b) {
         int ra = rank(a), rb = rank(b);
@@ -533,7 +392,7 @@ void OnResults(std::vector<DeviceStatus>& results) {
             ApplyEntry(e);
         }
         if (!seen.count(it->first) && !inGrace) {
-            if (it->second.added) TrayDelete(it->second.uid);
+            if (it->second.added) RemoveTrayIcon(it->second.uid);
             if (it->second.icon) DestroyIcon(it->second.icon);
             it = g_entries.erase(it);
         } else {
@@ -573,7 +432,7 @@ void NotifyWidgetFallback() {
         if (!g_placeholderIcon) g_placeholderIcon = RenderIcon(L"-", -1, Foreground(), Foreground(), true);
         icon = g_placeholderIcon;
     }
-    bool shown = TrayCall(NIM_MODIFY, uid, icon, tip, T(L"Taskbar widget unavailable"),
+    bool shown = SendTrayMessage(NIM_MODIFY, uid, icon, tip, T(L"Taskbar widget unavailable"),
                           T(L"Could not put the widget on the taskbar, so the tray icons are used instead."));
     if (!shown) {
         // Windows refuses the notification area to a lower-integrity process too, and that is the
@@ -630,7 +489,7 @@ void SetHideLastKnown(bool on) {
     UpdateWidget();
 }
 
-void ReAddAll() {
+void RebuildTrayIcons() {
     g_placeholder = false;
     for (auto& [k, e] : g_entries) { e.added = false; ApplyEntry(e); }
     UpdatePlaceholder();
@@ -643,7 +502,7 @@ void RedrawAll() {
     if (g_placeholderIcon) {
         DestroyIcon(g_placeholderIcon);
         g_placeholderIcon = nullptr;
-        if (g_placeholder) { TrayDelete(PLACEHOLDER_ID); g_placeholder = false; }
+        if (g_placeholder) { RemoveTrayIcon(PLACEHOLDER_ID); g_placeholder = false; }
     }
     for (auto& [k, e] : g_entries) { e.iconSig.clear(); ApplyEntry(e); }
     UpdatePlaceholder();
@@ -669,7 +528,7 @@ void SetBrandColors(bool on) {
 }
 
 void ToggleHidden(const std::wstring& key) {
-    if (!g_hidden.erase(key)) g_hidden.insert(key);
+    if (!HiddenKeys().erase(key)) HiddenKeys().insert(key);
     SaveHidden();
     auto it = g_entries.find(key);
     if (it != g_entries.end()) ApplyEntry(it->second);
@@ -687,9 +546,9 @@ void MoveEntry(const std::wstring& key, int dir) {
     std::swap(list[i], list[j]);
     std::vector<std::wstring> order;
     for (auto* e : list) order.push_back(e->st.key);
-    for (auto& k : g_order)  // keep the places of devices that are not shown right now
+    for (auto& k : OrderKeys())  // keep the places of devices that are not shown right now
         if (std::find(order.begin(), order.end(), k) == order.end()) order.push_back(k);
-    g_order = order;
+    OrderKeys() = order;
     SaveOrder();
     UpdateWidget();
 }
@@ -887,23 +746,23 @@ void StartRefreshBurst() {
     SetTimer(g_hwnd, TIMER_BURST, kPollBurstDelays[0], nullptr);
 }
 
-LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
+LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wParam, LPARAM lParam) {
     if (msg == g_taskbarCreatedMsg && msg != 0) {  // Explorer restarted
         widget::Destroy();
         g_useWidget = false;
-        ReAddAll();
+        RebuildTrayIcons();
         Reconcile();
         return 0;
     }
     switch (msg) {
         case WM_RESULTS: {
-            auto* v = reinterpret_cast<std::vector<DeviceStatus>*>(lp);
+            auto* v = reinterpret_cast<std::vector<DeviceStatus>*>(lParam);
             OnResults(*v);
             delete v;
             return 0;
         }
         case WM_TRAY:
-            switch (LOWORD(lp)) {
+            switch (LOWORD(lParam)) {
                 case WM_CONTEXTMENU:
                 case NIN_SELECT:
                 case NIN_KEYSELECT: ShowMenu(); break;
@@ -913,22 +772,22 @@ LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             ShowMenu();
             return 0;
         case WM_ENDSESSION:  // sign-out / shutdown / installer restart manager
-            if (wp) DestroyWindow(h);
+            if (wParam) DestroyWindow(h);
             return 0;
         case WM_DEVICECHANGE:
             // DBT_DEVNODES_CHANGED is the system-wide "a device was added or removed" broadcast: it is
             // what a Bluetooth headset raises, and it is the only notification this app gets for one,
             // because only HID interfaces are registered for separately below.
-            if (wp == DBT_DEVICEARRIVAL || wp == DBT_DEVICEREMOVECOMPLETE || wp == DBT_DEVNODES_CHANGED)
+            if (wParam == DBT_DEVICEARRIVAL || wParam == DBT_DEVICEREMOVECOMPLETE || wParam == DBT_DEVNODES_CHANGED)
                 StartRefreshBurst();
             return TRUE;
         case WM_POWERBROADCAST:
-            if (wp == PBT_APMRESUMEAUTOMATIC) RefreshSoon(5000);
+            if (wParam == PBT_APMRESUMEAUTOMATIC) RefreshSoon(5000);
             return TRUE;
         case WM_TIMER:
-            if (wp == TIMER_DEBOUNCE) { KillTimer(h, TIMER_DEBOUNCE); SetEvent(g_refreshEvt); }
-            if (wp == TIMER_WIDGET) Reconcile();
-            if (wp == TIMER_BURST) {
+            if (wParam == TIMER_DEBOUNCE) { KillTimer(h, TIMER_DEBOUNCE); SetEvent(g_refreshEvt); }
+            if (wParam == TIMER_WIDGET) Reconcile();
+            if (wParam == TIMER_BURST) {
                 SetEvent(g_refreshEvt);
                 if (g_burstStep + 1 < (int)ARRAYSIZE(kPollBurstDelays)) {
                     ++g_burstStep;
@@ -940,7 +799,7 @@ LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             }
             return 0;
         case WM_SETTINGCHANGE:
-            if (lp && !lstrcmpW((LPCWSTR)lp, L"ImmersiveColorSet")) {
+            if (lParam && !lstrcmpW((LPCWSTR)lParam, L"ImmersiveColorSet")) {
                 bool light = ReadLightTaskbar();
                 if (light != g_lightTaskbar) { g_lightTaskbar = light; ApplyMenuTheme(light); RedrawAll(); widget::SetLightTheme(light); }
             }
@@ -951,18 +810,18 @@ LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
             SetEvent(g_stopEvt);
             if (g_worker) WaitForSingleObject(g_worker, 5000);
             for (auto& [k, e] : g_entries) {
-                if (e.added) TrayDelete(e.uid);
+                if (e.added) RemoveTrayIcon(e.uid);
                 if (e.icon) DestroyIcon(e.icon);
             }
-            if (g_placeholder) TrayDelete(PLACEHOLDER_ID);
+            if (g_placeholder) RemoveTrayIcon(PLACEHOLDER_ID);
             PostQuitMessage(0);
             return 0;
     }
-    return DefWindowProcW(h, msg, wp, lp);
+    return DefWindowProcW(h, msg, wParam, lParam);
 }
 
 // `WirelessBattery.exe --list` prints what it finds, `--dump` every HID collection.
-int ListToConsole(bool dump) {
+int RunCommandLine(bool dump) {
     HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
     if (!out || out == INVALID_HANDLE_VALUE) {
         if (AttachConsole(ATTACH_PARENT_PROCESS)) out = CreateFileW(L"CONOUT$", GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
@@ -1022,8 +881,8 @@ int ListToConsole(bool dump) {
 }  // namespace
 
 int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR cmdLine, int) {
-    if (cmdLine && wcsstr(cmdLine, L"--list")) return ListToConsole(false);
-    if (cmdLine && wcsstr(cmdLine, L"--dump")) return ListToConsole(true);
+    if (cmdLine && wcsstr(cmdLine, L"--list")) return RunCommandLine(false);
+    if (cmdLine && wcsstr(cmdLine, L"--dump")) return RunCommandLine(true);
     if (cmdLine && wcsstr(cmdLine, L"--quit")) {  // used by the installer before upgrading/uninstalling
         if (HWND w = FindWindowW(L"WirelessBatteryWnd", nullptr)) {
             PostMessageW(w, WM_CLOSE, 0, 0);

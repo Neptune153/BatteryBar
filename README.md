@@ -21,7 +21,7 @@ Battery levels of your wireless mouse, headset, keyboard and controller, right o
 
 - **Tiny**: a ~350 KB app using about 2 MB of RAM. It's plain C++/Win32, with no runtime and no background service, and installs in seconds without admin rights.
 - **No vendor software needed**: it talks to the devices directly. G HUB, Synapse, iCUE, GG and NGenuity can stay closed (or keep running; they don't conflict).
-- **Many brands**: Logitech, Razer, SteelSeries, Corsair, HyperX, Glorious, Jabra, JBL, PlayStation and Xbox controllers, Samsung Galaxy Buds, any Bluetooth device Windows knows a battery level for, and every headset the bundled [HeadsetControl](https://github.com/Sapd/HeadsetControl) supports.
+- **Many brands**: Logitech, Razer, SteelSeries, Corsair, HyperX, Glorious, Jabra, JBL, PlayStation controllers, Samsung Galaxy Buds, any Bluetooth device Windows knows a battery level for, and every headset the bundled [HeadsetControl](https://github.com/Sapd/HeadsetControl) supports.
 
 ## Display
 
@@ -39,7 +39,7 @@ Battery levels of your wireless mouse, headset, keyboard and controller, right o
   percentage: Razer green, Logitech blue, SteelSeries orange, Corsair yellow, HyperX / ROG / ZOWIE red, PlayStation,
   Xbox, Samsung, Apple, Jabra, JBL, Cooler Master and Steam. Each color has a dark- and a light-taskbar shade. The brand
   comes from the driver that found the device, then the vendor ID, then the name; colors and rules are in
-  `src/brands.cpp`. Turn it off with *Brand colors* in the menu.
+  `src/text/brands.cpp`. Turn it off with *Brand colors* in the menu.
 
 **Tray icons:** one icon per device with the number drawn in it, plus a "Low battery" notification at 15%. The app switches to this automatically when the taskbar is vertical or can't be found.
 
@@ -131,7 +131,7 @@ Hover for details. Click for the menu: every device (click one to hide or show i
 | **JBL** | Quantum 650 Wireless (tested, 2.4 GHz dongle); Quantum 520, 650X, 850, 950, 950X Wireless (dongle or USB cable, same protocol, untested) | JBL "HIDV3" device-info query for the battery feature (usage page FF12), with charging state |
 | **JBL** | Quantum 350 Wireless (tested on Windows with the `0ECB:206B` 2.4 GHz receiver) | HIDV1 feature reports for wireless connection and battery percentage |
 | **GameSir** | Nova Lite, Nova 2, Nova 2 Lite on the 2.4 GHz receiver; Nova 2 Lite on USB | Vendor device-info query (usage page FF7A) |
-| **Xbox** | Controllers on the Xbox Wireless adapter, USB or Bluetooth; headsets plugged into a controller | Windows.Gaming.Input battery report (real %), XInput fallback |
+
 | **Switch Pro-compatible** | Controllers presenting as `057E:2009` (tested: GameSir Tarantula Pro via the 2.4 GHz receiver in Switch mode) | Five battery levels from HID report `0x30` after Steam Input or another host enables full reports |
 | **Apple AirPods / Beats** | AirPods Max (tested, `200A` Lightning and `201F` USB-C), AirPods Pro 3 (tested, `2027`), AirPods Pro 1 / 2, AirPods 1–5 and Beats headphones/earbuds | BLE "proximity pairing" (`0x07`) broadcasts (single battery for AirPods Max and Beats headphones; left, right and case for earbuds, in 10% steps with charging state), matched to the paired model |
 | **Phones (Phone Link)** | Any Android phone linked with Microsoft Phone Link, over Wi-Fi or Bluetooth (tested: Nothing Phone (4a) Pro) | Battery from Phone Link's Windows 11 Start menu card (`StartMenuCompanion.json`); no Bluetooth needed |
@@ -186,16 +186,14 @@ anywhere and run `WirelessBattery.exe`.
 WirelessBattery.exe --list     # print every device and its battery level, then exit
 WirelessBattery.exe --dump     # every HID collection, HID devices that could not be opened, all USB devices (also ones
                                # without a HID interface) and Bluetooth devices; also saved to %TEMP%\WirelessBattery-dump.txt
-WirelessBattery.exe --report   # open the "Request support for a device" window
+
 WirelessBattery.exe --demo     # sample devices of every brand instead of real ones (screenshots, checking colors)
 WirelessBattery.exe --quit     # close the running instance
 ```
 
-**Device not shown?** Right-click the widget or tray icon and choose **Request support for a device...**. Pick the device, check
-what will be sent (it is shown word for word: the device name, its type, its USB/HID ids and interface layout, and your optional
-name and notes) and click **Send**. It goes on the public list at [krisgfx.com/tools](https://krisgfx.com/tools/#requested) and
-opens or updates a GitHub issue. **Copy full report** puts the complete `--dump` on the clipboard for the issue. This window is
-the only place the app connects to the internet, and only when you click Send.
+**Device not shown?** Run `WirelessBattery.exe --dump` and attach the file it saves
+(`%TEMP%\WirelessBattery-dump.txt`) to a [GitHub issue](https://github.com/krisgfx9/Wireless-Device-Battery-Monitor/issues/new)
+with the model name. The app itself never opens a network connection.
 
 ## Build
 
@@ -203,14 +201,14 @@ the only place the app connects to the internet, and only when you click Send.
 [MSYS2](https://www.msys2.org/) (`pacman -S mingw-w64-x86_64-gcc make`):
 
 ```
-make              # MSYS2 / any shell with make
-build.bat         # plain cmd with g++ and windres on PATH
-temp\rebuild.bat  # this machine only: MSVC 2022 + Windows SDK, output in build\msvc\
+make                  # MSYS2 / any shell with make
+build.bat             # plain cmd with g++ and windres on PATH
+tools\build-msvc.bat  # this machine only: MSVC 2022 + Windows SDK, output in build\msvc\
 ```
 
-`temp\` holds the local MSVC build tooling and is git-ignored (see `temp\README.md`): the MinGW
-installed here is from 2018 and lacks the headers this project needs, so `make` and `build.bat` fail
-on this machine. The MSVC build leaves out `src\drivers\xinput.cpp` (Xbox pads) for the same reason.
+`tools\build-msvc.bat` builds with the MSVC 2022 + Windows SDK installed on this machine (see
+`tools\README.md`): the MinGW here is from 2018 and lacks the headers this project needs, so `make`
+and `build.bat` fail on it.
 
 To build the official installer and portable zip, install [Inno Setup](https://jrsoftware.org/isinfo.php) and
 run `powershell -File installer\build-installer.ps1 -Version 1.0.0`. It downloads the pinned
@@ -242,7 +240,7 @@ just lose the extra headsets.
 
 ## How it works
 
-Each vendor driver in [`src/drivers/`](src/drivers) recognises its devices by USB vendor and product ID, and only ever sends read-only battery queries. Unknown devices are never written to. The generic fallbacks (HID battery usage, Bluetooth, XInput, HeadsetControl) only look at devices no vendor driver has claimed.
+Each vendor driver in [`src/core/drivers/`](src/core/drivers) recognises its devices by USB vendor and product ID, and only ever sends read-only battery queries. Unknown devices are never written to. The generic fallbacks (HID battery usage, Bluetooth, HeadsetControl) only look at devices no vendor driver has claimed.
 
 The taskbar widget is a layered child window of `Shell_TrayWnd`, placed left of `TrayNotifyWnd`. If Explorer restarts, it is re-created. The widget can only be created from a process at the same integrity level as the taskbar, so when the app is started by a launcher that runs it at a lower level, it says so once (a balloon, or a message box when Windows also refuses the tray icon) instead of failing silently.
 

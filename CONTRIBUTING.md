@@ -16,8 +16,8 @@ Please open an issue with:
    vendor-defined collections (usage page `FFxx`) with their report sizes.
 2. Find the battery protocol. Good places to look: HeadsetControl, OpenRazer, Solaar, rivalcfg,
    OpenRGB, OpenLinkHub, or a USB capture of the vendor software (Wireshark + USBPcap).
-3. If the vendor already has a driver in `src/drivers/`, add the product ID (and any differences) there.
-   Otherwise create `src/drivers/<vendor>.cpp`:
+3. If the vendor already has a driver in `src/core/drivers/`, add the product ID (and any differences) there.
+   Otherwise create `src/core/drivers/<vendor>.cpp`:
 
    ```cpp
    #include "drivers.h"
@@ -42,8 +42,8 @@ Please open an issue with:
    }
    ```
 
-4. Declare the function in `src/drivers/drivers.h`, call it from `PollAllDevices()` in
-   `src/devices.cpp` (before the generic fallbacks). `build.bat` and the Makefile pick up new files automatically.
+4. Declare the function in `src/core/drivers/drivers.h`, call it from `PollAllDevices()` in
+   `src/core/devices.cpp` (before the generic fallbacks). `build.bat` and the Makefile pick up new files automatically.
 5. Update the device table in `README.md`.
 
 ### Rules for drivers
