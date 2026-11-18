@@ -212,9 +212,15 @@ temp\rebuild.bat  # this machine only: MSVC 2022 + Windows SDK, output in build\
 installed here is from 2018 and lacks the headers this project needs, so `make` and `build.bat` fail
 on this machine. The MSVC build leaves out `src\drivers\xinput.cpp` (Xbox pads) for the same reason.
 
-To build the installer and portable zip, install [Inno Setup](https://jrsoftware.org/isinfo.php) and run
-`powershell -File installer\build-installer.ps1 -Version 1.0.0`. It downloads the pinned
+To build the official installer and portable zip, install [Inno Setup](https://jrsoftware.org/isinfo.php) and
+run `powershell -File installer\build-installer.ps1 -Version 1.0.0`. It downloads the pinned
 HeadsetControl release and verifies its checksum.
+
+Without Inno Setup (or without network) there is `powershell -File installer\build-local-setup.ps1 -Version 1.0.0`:
+it packs `build\msvc\WirelessBattery.exe`, `headsetcontrol.exe` if found, and two small scripts into
+`dist\WirelessBattery-Setup-<version>.zip`. Unpack it and double-click `install.bat`: the program is copied to
+`%LOCALAPPDATA%\Programs\Wireless Battery`, a Start-menu shortcut and an entry in *Settings → Apps* are
+created, and `uninstall.bat` removes it again.
 
 `WirelessBattery.exe` on its own also works. Without `headsetcontrol.exe` next to it (or on `PATH`) you
 just lose the extra headsets.
