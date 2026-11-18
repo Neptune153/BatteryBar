@@ -20,12 +20,12 @@ for /r "src" %%f in (*.cpp) do (
     cl %FLAGS% %INC% /Fo:build\msvc\ /Tp "%%f" || goto :fail
 )
 
-link /nologo /SUBSYSTEM:WINDOWS /ENTRY:wWinMainCRTStartup /OUT:build\msvc\WirelessBattery.exe ^
+link /nologo /SUBSYSTEM:WINDOWS /ENTRY:wWinMainCRTStartup /OUT:build\msvc\BatteryBar.exe ^
     build\msvc\*.obj build\msvc\app_res.res ^
     user32.lib gdi32.lib advapi32.lib ole32.lib oleaut32.lib comctl32.lib hid.lib setupapi.lib ^
     cfgmgr32.lib runtimeobject.lib ws2_32.lib shell32.lib comdlg32.lib uuid.lib windowsapp.lib || goto :fail
 
-echo BUILT build\msvc\WirelessBattery.exe
+echo BUILT build\msvc\BatteryBar.exe
 exit /b 0
 
 :fail

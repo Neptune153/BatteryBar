@@ -1,4 +1,4 @@
-// Everything this app remembers between runs: the registry keys (HKCU\Software\WirelessBattery), the
+// Everything this app remembers between runs: the registry keys (HKCU\Software\BatteryBar), the
 // hidden/ordered device lists, the taskbar theme and the autostart entry. No UI code lives here.
 #pragma once
 
@@ -45,6 +45,8 @@ bool LoadStacked();
 void SaveStacked(bool on);
 bool LoadBrandColors();
 void SaveBrandColors(bool on);
+
+void MigrateFromOldName();
 
 bool AutostartEnabled();
 void SetAutostart(bool on);

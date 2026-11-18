@@ -6,7 +6,7 @@ root are the regular entry points.
 
 | File | Purpose |
 | --- | --- |
-| `build-msvc.bat` | Full build with MSVC 2022 + Windows SDK 10.0.22621 (`build\msvc\WirelessBattery.exe`) |
+| `build-msvc.bat` | Full build with MSVC 2022 + Windows SDK 10.0.22621 (`build\msvc\BatteryBar.exe`) |
 
 ## Why MSVC here
 

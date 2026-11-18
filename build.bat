@@ -1,5 +1,5 @@
 @echo off
-rem Builds WirelessBattery.exe with MinGW-w64 (g++ and windres on PATH).
+rem Builds BatteryBar.exe with MinGW-w64 (g++ and windres on PATH).
 rem Every .cpp under src\ is compiled, so a new driver needs no change here.
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
@@ -12,6 +12,6 @@ for /r "%~dp0src" %%f in (*.cpp) do set SOURCES=!SOURCES! "%%f"
 g++ -std=c++17 -Os -municode -mwindows -static -s -ffunction-sections -fdata-sections -Wl,--gc-sections ^
     -D_WIN32_WINNT=0x0A00 -DWINVER=0x0A00 -Wall -Wno-missing-field-initializers ^
     !SOURCES! ^
-    build\app_res.o -o WirelessBattery.exe ^
+    build\app_res.o -o BatteryBar.exe ^
     -lhid -lsetupapi -lcfgmgr32 -lole32 -loleaut32 -lcomctl32 -lgdi32 -lruntimeobject -lws2_32 || exit /b 1
-echo Built WirelessBattery.exe
+echo Built BatteryBar.exe

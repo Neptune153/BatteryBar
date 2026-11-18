@@ -1,4 +1,4 @@
-# Builds WirelessBattery.exe with MinGW-w64 (MSYS2 MINGW64/UCRT64 shell, or any mingw g++ on PATH).
+# Builds BatteryBar.exe with MinGW-w64 (MSYS2 MINGW64/UCRT64 shell, or any mingw g++ on PATH).
 CXX      ?= g++
 WINDRES  ?= windres
 CXXFLAGS ?= -std=c++17 -Os -Wall -Wno-missing-field-initializers -ffunction-sections -fdata-sections \
@@ -11,7 +11,7 @@ SRC := $(shell find src -name '*.cpp')
 HDR := $(shell find src -name '*.h')
 OBJ := $(patsubst src/%.cpp,build/%.o,$(SRC)) build/app_res.o
 
-WirelessBattery.exe: $(OBJ)
+BatteryBar.exe: $(OBJ)
 	$(CXX) $(LDFLAGS) $^ -o $@ $(LIBS)
 
 build/%.o: src/%.cpp $(HDR)
@@ -28,7 +28,7 @@ build/app_res.o: res/app.rc res/app.manifest res/app.ico res/app_light.ico build
 	$(WINDRES) -i $< -o $@ --include-dir res --include-dir build
 
 clean:
-	rm -rf build WirelessBattery.exe
+	rm -rf build BatteryBar.exe
 
 # Each test is "<name>|<extra sources>"; an empty extra list means a header-only protocol test.
 TESTS := \

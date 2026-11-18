@@ -7,9 +7,9 @@
 namespace settings {
 namespace {
 
-const wchar_t* kSettingsKey = L"Software\\WirelessBattery";
+const wchar_t* kSettingsKey = L"Software\\BatteryBar";
 const wchar_t* kRunKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-const wchar_t* kRunValue = L"WirelessBattery";
+const wchar_t* kRunValue = L"BatteryBar";
 
 std::set<std::wstring> g_hidden;
 std::vector<std::wstring> g_order;
@@ -165,6 +165,28 @@ void SetAutostart(bool on) {
         RegDeleteValueW(k, kRunValue);
     }
     RegCloseKey(k);
+}
+
+// One-time move from the old product name: earlier versions kept every value under
+// Software\WirelessBattery. Values are copied once, so nothing the user configured is lost.
+void MigrateFromOldName() {
+    HKEY old = nullptr;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\WirelessBattery", 0, KEY_READ, &old) != ERROR_SUCCESS) return;
+    HKEY nw = nullptr;
+    if (RegCreateKeyExW(HKEY_CURRENT_USER, kSettingsKey, 0, nullptr, 0, KEY_ALL_ACCESS, nullptr, &nw, nullptr) == ERROR_SUCCESS) {
+        for (DWORD i = 0;; ++i) {
+            wchar_t name[256];
+            DWORD nameLen = 256, type = 0, size = 0;
+            if (RegEnumValueW(old, i, name, &nameLen, nullptr, &type, nullptr, &size) != ERROR_SUCCESS) break;
+            if (size == 0 || size > 64 * 1024) continue;
+            std::vector<BYTE> buf(size);
+            if (RegQueryValueExW(old, name, nullptr, &type, buf.data(), &size) != ERROR_SUCCESS) continue;
+            if (RegQueryValueExW(nw, name, nullptr, nullptr, nullptr, nullptr) == ERROR_SUCCESS) continue;  // keep the new value
+            RegSetValueExW(nw, name, 0, type, buf.data(), size);
+        }
+        RegCloseKey(nw);
+    }
+    RegCloseKey(old);
 }
 
 }  // namespace settings

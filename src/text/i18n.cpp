@@ -12,7 +12,7 @@
 
 namespace {
 
-const wchar_t kSettingsKey[] = L"Software\\WirelessBattery";
+const wchar_t kSettingsKey[] = L"Software\\BatteryBar";
 
 // One language: its built-in text and/or a user's file (whose phrases win), parsed only when chosen.
 struct Source {
@@ -119,7 +119,7 @@ void LoadBuiltIn() {
 std::wstring UserFolder() {
     wchar_t path[MAX_PATH] = {};
     if (FAILED(SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, path))) return L"";
-    return std::wstring(path) + L"\\WirelessBattery\\lang";
+    return std::wstring(path) + L"\\BatteryBar\\lang";
 }
 
 void LoadFolder(const std::wstring& dir) {

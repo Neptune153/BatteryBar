@@ -44,7 +44,7 @@ std::wstring g_choice = L"all";
 bool g_primaryHidden = false;
 HWND g_dpiBar;  // while a mirror is painted or placed, Px() uses its taskbar's DPI
 
-const wchar_t* kClass = L"WirelessBatteryWidget";
+const wchar_t* kClass = L"BatteryBarWidget";
 
 
 // Windows 11 puts the Widgets (weather) button right next to the tray when the taskbar is
@@ -55,7 +55,7 @@ const wchar_t* kClass = L"WirelessBatteryWidget";
 // UI Automation calls go to Explorer and wait for its UI thread, while our widget is a child window
 // of the taskbar, so Explorer in turn waits for our UI thread whenever it lays out or sends input to
 // the widget. Making those calls from our UI thread deadlocks both: Explorer is reported hung
-// ("Cross-process", waiting on WirelessBattery.exe) and restarted, again and again. So the lookup
+// ("Cross-process", waiting on BatteryBar.exe) and restarted, again and again. So the lookup
 // runs on its own thread, which owns no windows, and the UI thread only reads the last rectangle.
 SRWLOCK g_wbLock = SRWLOCK_INIT;
 RECT g_wbRect{};             // last Widgets button rectangle (screen), empty when unknown
@@ -271,7 +271,7 @@ void PositionMirror(Mirror& m) {
         ReleaseSRWLockShared(&g_wbLock);
     }
     DWORD offset = 0, sz = sizeof(offset);
-    if (RegGetValueW(HKEY_CURRENT_USER, L"Software\\WirelessBattery", L"TaskbarOffset", RRF_RT_REG_DWORD, nullptr, &offset, &sz) ==
+    if (RegGetValueW(HKEY_CURRENT_USER, L"Software\\BatteryBar", L"TaskbarOffset", RRF_RT_REG_DWORD, nullptr, &offset, &sz) ==
         ERROR_SUCCESS)
         right -= Px((int)offset);
     int left = right - m.size.cx - Px(2);
@@ -291,7 +291,7 @@ void AddTool(HWND w) {
     ti.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
     ti.hwnd = g_notify;
     ti.uId = (UINT_PTR)w;
-    ti.lpszText = const_cast<wchar_t*>(g_tipText.empty() ? L"Wireless Battery" : g_tipText.c_str());
+    ti.lpszText = const_cast<wchar_t*>(g_tipText.empty() ? L"BatteryBar" : g_tipText.c_str());
     SendMessageW(g_tip, TTM_ADDTOOLW, 0, (LPARAM)&ti);
 }
 
@@ -514,7 +514,7 @@ bool Create(HINSTANCE inst, HWND notifyWnd, UINT clickMsg, bool lightTheme) {
         ti.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
         ti.hwnd = notifyWnd;
         ti.uId = (UINT_PTR)g_wnd;
-        ti.lpszText = const_cast<wchar_t*>(L"Wireless Battery");
+        ti.lpszText = const_cast<wchar_t*>(L"BatteryBar");
         SendMessageW(g_tip, TTM_ADDTOOLW, 0, (LPARAM)&ti);
         SendMessageW(g_tip, TTM_SETMAXTIPWIDTH, 0, 600);
     }
@@ -625,7 +625,7 @@ bool Reposition() {
         ScreenToClient(g_taskbar, &anchor);
         int top = anchor.y - g_size.cy - Px(2);
         DWORD offset = 0, osz = sizeof(offset);
-        if (RegGetValueW(HKEY_CURRENT_USER, L"Software\\WirelessBattery", L"TaskbarOffset", RRF_RT_REG_DWORD, nullptr, &offset,
+        if (RegGetValueW(HKEY_CURRENT_USER, L"Software\\BatteryBar", L"TaskbarOffset", RRF_RT_REG_DWORD, nullptr, &offset,
                          &osz) == ERROR_SUCCESS)
             top -= Px((int)offset);
         top = std::clamp(top, 0, (int)std::max<LONG>(0, client.bottom - g_size.cy));
@@ -678,7 +678,7 @@ bool Reposition() {
 
     // Optional user override in DPI-independent pixels (e.g. for custom padding).
     DWORD customOffset = 0, sz = sizeof(customOffset);
-    if (RegGetValueW(HKEY_CURRENT_USER, L"Software\\WirelessBattery", L"TaskbarOffset",
+    if (RegGetValueW(HKEY_CURRENT_USER, L"Software\\BatteryBar", L"TaskbarOffset",
                      RRF_RT_REG_DWORD, nullptr, &customOffset, &sz) == ERROR_SUCCESS) {
         left -= Px((int)customOffset);
     }

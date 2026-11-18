@@ -1,4 +1,4 @@
-// Wireless Battery - tray app showing the battery level of wireless mice, headsets and Bluetooth devices.
+// BatteryBar - tray app showing the battery level of wireless mice, headsets and Bluetooth devices.
 #include <windows.h>
 #include <shellapi.h>
 #include <dbt.h>
@@ -46,8 +46,8 @@ enum MenuId : UINT {
 };
 enum DeviceCmd : UINT { DEV_TOGGLE, DEV_LEFT, DEV_RIGHT, DEV_STRIDE = 4 };
 
-const wchar_t* kAppName = L"Wireless Battery";
-const wchar_t* kRunValue = L"WirelessBattery";
+const wchar_t* kAppName = L"BatteryBar";
+const wchar_t* kRunValue = L"BatteryBar";
 
 
 HINSTANCE g_inst;
@@ -269,7 +269,7 @@ void UpdatePlaceholder() {
     for (auto& [k, e] : g_entries) any |= e.added;
     if (!any && !g_placeholder) {
         if (!g_placeholderIcon) g_placeholderIcon = RenderIcon(L"-", -1, Foreground(), Foreground(), true);
-        SendTrayMessage(NIM_ADD, PLACEHOLDER_ID, g_placeholderIcon, std::wstring(L"Wireless Battery\n") + T(L"No devices with battery info found"));
+        SendTrayMessage(NIM_ADD, PLACEHOLDER_ID, g_placeholderIcon, std::wstring(L"BatteryBar\n") + T(L"No devices with battery info found"));
         g_placeholder = true;
     } else if (any && g_placeholder) {
         RemoveTrayIcon(PLACEHOLDER_ID);
@@ -366,7 +366,7 @@ void UpdateWidget() {
         if (!tip.empty()) tip += L"\n";
         tip += e->st.name + L": " + StatusText(*e);
     }
-    if (tip.empty()) tip = std::wstring(L"Wireless Battery: ") + T(L"No devices with battery info found");
+    if (tip.empty()) tip = std::wstring(L"BatteryBar: ") + T(L"No devices with battery info found");
     widget::SetItems(items, tip);
 }
 
@@ -411,7 +411,7 @@ void NotifyWidgetFallback() {
     if (g_widgetFailNotified) return;
     UINT uid = 0;
     HICON icon = nullptr;
-    std::wstring tip = L"Wireless Battery";
+    std::wstring tip = L"BatteryBar";
     if (g_placeholder) {
         uid = PLACEHOLDER_ID;
         icon = g_placeholderIcon;
@@ -820,7 +820,7 @@ LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wParam, LPARAM lParam) {
     return DefWindowProcW(h, msg, wParam, lParam);
 }
 
-// `WirelessBattery.exe --list` prints what it finds, `--dump` every HID collection.
+// `BatteryBar.exe --list` prints what it finds, `--dump` every HID collection.
 int RunCommandLine(bool dump) {
     HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
     if (!out || out == INVALID_HANDLE_VALUE) {
@@ -839,7 +839,7 @@ int RunCommandLine(bool dump) {
         std::wstring text = DumpHidCollections();
         wchar_t path[MAX_PATH] = {};
         GetTempPathW(MAX_PATH, path);
-        wcscat_s(path, L"WirelessBattery-dump.txt");
+        wcscat_s(path, L"BatteryBar-dump.txt");
         HANDLE f = CreateFileW(path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
         if (f != INVALID_HANDLE_VALUE) {
             std::wstring crlf;
@@ -884,16 +884,16 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR cmdLine, int) {
     if (cmdLine && wcsstr(cmdLine, L"--list")) return RunCommandLine(false);
     if (cmdLine && wcsstr(cmdLine, L"--dump")) return RunCommandLine(true);
     if (cmdLine && wcsstr(cmdLine, L"--quit")) {  // used by the installer before upgrading/uninstalling
-        if (HWND w = FindWindowW(L"WirelessBatteryWnd", nullptr)) {
+        if (HWND w = FindWindowW(L"BatteryBarWnd", nullptr)) {
             PostMessageW(w, WM_CLOSE, 0, 0);
-            for (int i = 0; i < 50 && FindWindowW(L"WirelessBatteryWnd", nullptr); i++) Sleep(100);
+            for (int i = 0; i < 50 && FindWindowW(L"BatteryBarWnd", nullptr); i++) Sleep(100);
         }
         return 0;
     }
     g_inst = inst;
     g_demo = cmdLine && wcsstr(cmdLine, L"--demo");
 
-    HANDLE mutex = CreateMutexW(nullptr, TRUE, L"Local\\WirelessBatteryTray");
+    HANDLE mutex = CreateMutexW(nullptr, TRUE, L"Local\\BatteryBarTray");
     if (GetLastError() == ERROR_ALREADY_EXISTS) return 0;
 
     g_lightTaskbar = ReadLightTaskbar();
@@ -903,7 +903,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR cmdLine, int) {
     WNDCLASSEXW wc{ sizeof(wc) };
     wc.lpfnWndProc = WndProc;
     wc.hInstance = inst;
-    wc.lpszClassName = L"WirelessBatteryWnd";
+    wc.lpszClassName = L"BatteryBarWnd";
     RegisterClassExW(&wc);
     // A hidden top-level window (not message-only) so it receives the TaskbarCreated broadcast.
     g_hwnd = CreateWindowExW(WS_EX_TOOLWINDOW, wc.lpszClassName, kAppName, WS_POPUP, 0, 0, 0, 0, nullptr, nullptr, inst, nullptr);
@@ -918,6 +918,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR cmdLine, int) {
     g_stopEvt = CreateEventW(nullptr, TRUE, FALSE, nullptr);
     g_wantWidget = LoadWidgetMode();
     g_hideLastKnown = LoadHideLastKnown();
+    settings::MigrateFromOldName();
     g_widgetBackground = LoadWidgetBackground();
     g_brandColors = LoadBrandColors();
     g_stacked = LoadStacked();
