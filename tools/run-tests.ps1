@@ -1,4 +1,4 @@
-# Compiles and runs every test listed in the Makefile's TESTS table with the local MSVC toolchain.
+﻿# Compiles and runs every test listed in the Makefile's TESTS table with the local MSVC toolchain.
 # The table is the single source of truth (name|extra sources), so adding a test needs no edit here.
 param([switch]$Quiet)
 $ErrorActionPreference = 'Stop'

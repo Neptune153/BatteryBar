@@ -1,4 +1,4 @@
-# Builds dist\BatteryBar-Setup-<version>.exe and dist\BatteryBar-<version>-portable.zip.
+﻿# Builds dist\BatteryBar-Setup-<version>.exe and dist\BatteryBar-<version>-portable.zip.
 # Needs: BatteryBar.exe already built (make / build.bat) and Inno Setup 6 or 7 installed.
 param([string]$Version = "1.0.0")
 $ErrorActionPreference = "Stop"

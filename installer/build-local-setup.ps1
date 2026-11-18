@@ -1,4 +1,4 @@
-# 生成可以直接双击安装的压缩包（不需要 Inno Setup、不需要联网）。
+﻿# 生成可以直接双击安装的压缩包（不需要 Inno Setup、不需要联网）。
 # 用法：powershell -NoProfile -File installer\build-local-setup.ps1 [-Version 1.0.0]
 # 产物：dist\BatteryBar-Setup-<版本>.zip
 param([string]$Version = '1.0.0')
@@ -15,7 +15,10 @@ Copy-Item $exe (Join-Path $stage 'BatteryBar.exe')
 
 # 官方安装包里带的 headsetcontrol.exe（额外耳机支持）如果本机有，就一起打进去
 $hsc = Join-Path $root 'third_party\headsetcontrol\headsetcontrol.exe'
-if (-not (Test-Path $hsc)) { $hsc = 'D:\a_downloads\software\BatteryBar\headsetcontrol.exe' }
+if (-not (Test-Path $hsc)) { $hsc = Join-Path $env:LOCALAPPDATA 'Programs\BatteryBar\headsetcontrol.exe' }
+if (-not (Test-Path $hsc)) { $hsc = Join-Path $env:LOCALAPPDATA 'Programs\Wireless Battery\headsetcontrol.exe' }
+# 上一次官方安装包留下的可执行文件（本机才有，找不到就算了）
+if (-not (Test-Path $hsc)) { $hsc = 'D:\a_downloads\software\Wireless Battery\headsetcontrol.exe' }
 if (Test-Path $hsc) {
     Copy-Item $hsc (Join-Path $stage 'headsetcontrol.exe')
     Write-Host '已带上 headsetcontrol.exe'
