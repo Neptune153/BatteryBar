@@ -133,11 +133,6 @@ bool SonyAudio(const std::wstring& n) { return StartsWith(n, L"wh-") || StartsWi
 
 }  // namespace
 
-const BrandStyle* AllBrands(int& count) {
-    count = (int)(sizeof(kBrands) / sizeof(kBrands[0]));
-    return kBrands;
-}
-
 const BrandStyle& StyleOf(Accent a) {
     for (const auto& b : kBrands)
         if (b.accent == a) return b;

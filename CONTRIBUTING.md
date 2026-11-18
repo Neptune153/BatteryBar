@@ -43,7 +43,7 @@ Please open an issue with:
    ```
 
 4. Declare the function in `src/core/drivers/drivers.h`, call it from `PollAllDevices()` in
-   `src/core/devices.cpp` (before the generic fallbacks). `build.bat` and the Makefile pick up new files automatically.
+   `src/core/devices.cpp` (before the generic fallbacks). The Makefile and `CMakeLists.txt` pick up new files automatically.
 5. Update the device table in `README.md`.
 
 ### Rules for drivers

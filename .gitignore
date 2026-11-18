@@ -1,9 +1,12 @@
 build/
+dist/
 temp/
-wireless-battery
+third_party/
 *.exe
 *.o
-dist/
-third_party/
+*.obj
+*.pdb
+*.ilk
+*.user
 .claude/
 CLAUDE.md

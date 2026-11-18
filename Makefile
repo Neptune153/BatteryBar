@@ -42,7 +42,7 @@ TESTS := \
     machenike_driver_test|src/core/drivers/machenike.cpp \
     niceboy_driver_test|src/core/drivers/niceboy.cpp \
     alienware_driver_test|src/core/drivers/alienware.cpp \
-    arbiter_driver_test|src/core/drivers/arbiter.cpp \
+    arbiter_driver_test|src/core/drivers/arbiter.cpp src/core/drivers/lamzu.cpp \
     dareu_driver_test|src/core/drivers/dareu.cpp \
     semico_driver_test|src/core/drivers/semico.cpp \
     steelseries_driver_test|src/core/drivers/steelseries.cpp \

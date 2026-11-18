@@ -27,8 +27,6 @@ void Destroy();
 bool Alive();
 void SetItems(const std::vector<WidgetItem>& items, const std::wstring& tooltip);
 void SetLightTheme(bool light);
-// Draws a rounded plate in the taskbar's colours behind the text (kept across Create/Destroy).
-void SetBackground(bool on);
 // Opacity of that plate in percent, 0 (none) to 100 (solid); kept across Create/Destroy.
 void SetBackgroundOpacity(int percent);
 // Icon above the percentage instead of beside it, when the taskbar is tall enough (kept across Create/Destroy).

@@ -17,8 +17,6 @@ Copy-Item $exe (Join-Path $stage 'BatteryBar.exe')
 $hsc = Join-Path $root 'third_party\headsetcontrol\headsetcontrol.exe'
 if (-not (Test-Path $hsc)) { $hsc = Join-Path $env:LOCALAPPDATA 'Programs\BatteryBar\headsetcontrol.exe' }
 if (-not (Test-Path $hsc)) { $hsc = Join-Path $env:LOCALAPPDATA 'Programs\Wireless Battery\headsetcontrol.exe' }
-# 上一次官方安装包留下的可执行文件（本机才有，找不到就算了）
-if (-not (Test-Path $hsc)) { $hsc = 'D:\a_downloads\software\Wireless Battery\headsetcontrol.exe' }
 if (Test-Path $hsc) {
     Copy-Item $hsc (Join-Path $stage 'headsetcontrol.exe')
     Write-Host '已带上 headsetcontrol.exe'

@@ -1,4 +1,4 @@
-# BatteryBar
+﻿# BatteryBar
 
 在 Windows 任务栏上显示无线设备的电量：耳机、鼠标、键盘、手柄、手机。
 
@@ -83,8 +83,7 @@ tools\build-msvc.bat
 
 脚本自行定位 `vcvars64.bat`，合并语言文件后编译链接到 `build\msvc\BatteryBar.exe`。
 
-MinGW 路径（`build.bat`、`Makefile`）保留，需较新的 mingw-w64：旧版本缺少 `devpkey.h`
-与 WinRT 头文件，编译失败。
+MinGW 路径（`Makefile`）保留，需较新的 mingw-w64：旧版本缺少 `devpkey.h`，编译失败。
 
 构建脚本会自动收集 `src/` 下的所有 `.cpp`，新增驱动不需要改构建文件。
 

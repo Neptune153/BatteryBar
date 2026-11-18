@@ -19,8 +19,6 @@ struct BrandStyle {
     BrandColor light;     // on a light taskbar: a deeper shade of the same hue (at least 3:1 contrast)
 };
 
-// Every brand with its colours, in enum order (Accent::None first).
-const BrandStyle* AllBrands(int& count);
 const BrandStyle& StyleOf(Accent a);
 BrandColor AccentColor(Accent a, bool lightTaskbar);
 

@@ -572,10 +572,6 @@ void SetLightTheme(bool light) {
     PaintAll();
 }
 
-void SetBackground(bool on) {
-    SetBackgroundOpacity(on ? 100 : 0);
-}
-
 void SetBackgroundOpacity(int percent) {
     g_bgPercent = percent < 0 ? 0 : (percent > 100 ? 100 : percent);
     PaintAll();
