@@ -124,6 +124,25 @@ LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wParam, LPARAM lParam) {
     return DefWindowProcW(h, msg, wParam, lParam);
 }
 
+// The taskbar child window and the tray icon both go through Explorer, which only accepts them
+// from a process at its own integrity level. One started by a lower-privileged program can use
+// neither, so say why instead of leaving a process running with nothing on screen.
+static int IntegrityLevel() {
+    HANDLE token = nullptr;
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) return SECURITY_MANDATORY_MEDIUM_RID;
+    DWORD size = 0;
+    GetTokenInformation(token, TokenIntegrityLevel, nullptr, 0, &size);
+    std::vector<BYTE> buf(size ? size : sizeof(TOKEN_MANDATORY_LABEL));
+    int level = SECURITY_MANDATORY_MEDIUM_RID;
+    if (GetTokenInformation(token, TokenIntegrityLevel, buf.data(), (DWORD)buf.size(), &size)) {
+        auto* label = reinterpret_cast<TOKEN_MANDATORY_LABEL*>(buf.data());
+        BYTE count = *GetSidSubAuthorityCount(label->Label.Sid);
+        if (count > 0) level = (int)*GetSidSubAuthority(label->Label.Sid, count - 1);
+    }
+    CloseHandle(token);
+    return level;
+}
+
 int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR cmdLine, int) {
     if (cmdLine && wcsstr(cmdLine, L"--list")) return RunCommandLine(false);
     if (cmdLine && wcsstr(cmdLine, L"--dump")) return RunCommandLine(true);
@@ -139,6 +158,14 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR cmdLine, int) {
 
     HANDLE mutex = CreateMutexW(nullptr, TRUE, L"Local\\BatteryBarTray");
     if (GetLastError() == ERROR_ALREADY_EXISTS) return 0;
+
+    if (IntegrityLevel() < SECURITY_MANDATORY_MEDIUM_RID) {
+        i18n::Init();  // the text below is localized, so pick the language before showing it
+        MessageBoxW(nullptr,
+                    T(L"Windows does not let a program started by a lower-privileged program use the taskbar or the notification area. Close it, then start it again from the Start menu, or by double-clicking it in File Explorer."),
+                    T(L"Started with lower permissions"), MB_OK | MB_ICONWARNING | MB_TOPMOST | MB_SETFOREGROUND);
+        return 0;
+    }
 
     g_lightTaskbar = ReadLightTaskbar();
     ApplyMenuTheme(g_lightTaskbar);
