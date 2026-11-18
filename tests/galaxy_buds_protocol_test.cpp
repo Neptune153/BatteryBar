@@ -1,4 +1,4 @@
-#include "../src/drivers/galaxy_buds_protocol.h"
+#include "../src/core/drivers/protocol/galaxy_buds_protocol.h"
 
 #include <cassert>
 #include <cstdio>

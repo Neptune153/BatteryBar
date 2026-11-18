@@ -1,5 +1,5 @@
 // Simulated HID replies; checks read-only commands, validation and device filtering.
-#include "../src/drivers/drivers.h"
+#include "../src/core/drivers/drivers.h"
 #include <cassert>
 #include <cstdio>
 

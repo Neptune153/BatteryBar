@@ -1,4 +1,4 @@
-#include "../src/drivers/logitech_g435_0adf.h"
+#include "../src/core/drivers/protocol/logitech_g435_0adf.h"
 
 #include <cassert>
 #include <cstdio>

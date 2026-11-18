@@ -1,4 +1,4 @@
-#include "../src/drivers/rapoo_protocol.h"
+#include "../src/core/drivers/protocol/rapoo_protocol.h"
 
 #include <cassert>
 #include <cstdio>

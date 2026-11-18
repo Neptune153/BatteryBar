@@ -1,5 +1,5 @@
 // Exercise the real Aerox/Prime driver with a simulated HID transport; no hardware writes.
-#include "../src/drivers/drivers.h"
+#include "../src/core/drivers/drivers.h"
 
 #include <cstdio>
 #include <cstdlib>

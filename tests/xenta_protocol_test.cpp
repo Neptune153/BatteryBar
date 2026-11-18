@@ -1,4 +1,4 @@
-#include "../src/drivers/xenta_protocol.h"
+#include "../src/core/drivers/protocol/xenta_protocol.h"
 
 #include <cassert>
 #include <cstdio>

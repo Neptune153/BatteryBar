@@ -13,11 +13,10 @@
 #include <string>
 #include <vector>
 
-#include "devices.h"
-#include "i18n.h"
-#include "labels.h"
-#include "report.h"
-#include "widget.h"
+#include "core/devices.h"
+#include "text/i18n.h"
+#include "text/labels.h"
+#include "app/widget/widget.h"
 
 namespace {
 
@@ -35,7 +34,7 @@ constexpr int LOW_BATTERY = 15;
 constexpr UINT PLACEHOLDER_ID = 1;
 
 enum MenuId : UINT {
-    ID_REFRESH = 100, ID_AUTOSTART, ID_HIDE_LAST_KNOWN, ID_EXIT, ID_MODE_WIDGET, ID_MODE_TRAY, ID_SUPPORT, ID_REPORT,
+    ID_REFRESH = 100, ID_AUTOSTART, ID_HIDE_LAST_KNOWN, ID_EXIT, ID_MODE_WIDGET, ID_MODE_TRAY, ID_SUPPORT,
     ID_BRAND_COLORS, ID_STACKED,
     ID_WIDGET_BG_FIRST = 130,  // "Background behind taskbar text": ID_WIDGET_BG_FIRST + opacity / 10
     ID_LANG_AUTO = 400, ID_LANG_ADD, ID_LANG_FIRST,  // "Language": ID_LANG_FIRST + 0..63
@@ -780,7 +779,6 @@ void ShowMenu() {
     }
     AppendMenuW(m, MF_STRING, ID_REFRESH, T(L"Refresh now"));
     AppendMenuW(m, MF_STRING | (AutostartEnabled() ? MF_CHECKED : 0), ID_AUTOSTART, T(L"Start with Windows"));
-    AppendMenuW(m, MF_STRING, ID_REPORT, T(L"Request support for a device..."));
     AppendMenuW(m, MF_STRING, ID_SUPPORT, T(L"Support the project..."));
     AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(m, MF_STRING, ID_EXIT, T(L"Exit"));
@@ -804,7 +802,6 @@ void ShowMenu() {
         case ID_MODE_WIDGET: SetMode(true); break;
         case ID_MODE_TRAY: SetMode(false); break;
         case ID_SUPPORT: ShellExecuteW(nullptr, L"open", L"https://github.com/sponsors/krisgfx9", nullptr, nullptr, SW_SHOWNORMAL); break;
-        case ID_REPORT: report::Show(g_inst, g_hwnd); break;
         case ID_EXIT: DestroyWindow(g_hwnd); break;
         default:
             if (cmd >= ID_WIDGET_BG_FIRST && cmd <= ID_WIDGET_BG_FIRST + 10) {
@@ -1027,17 +1024,6 @@ int ListToConsole(bool dump) {
 int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR cmdLine, int) {
     if (cmdLine && wcsstr(cmdLine, L"--list")) return ListToConsole(false);
     if (cmdLine && wcsstr(cmdLine, L"--dump")) return ListToConsole(true);
-    if (cmdLine && wcsstr(cmdLine, L"--report")) {  // the "Request support for a device" window on its own
-        i18n::Init();
-        report::Show(inst, nullptr);
-        MSG msg;
-        while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
-            if (report::PreTranslate(&msg)) continue;
-            TranslateMessage(&msg);
-            DispatchMessageW(&msg);
-        }
-        return 0;
-    }
     if (cmdLine && wcsstr(cmdLine, L"--quit")) {  // used by the installer before upgrading/uninstalling
         if (HWND w = FindWindowW(L"WirelessBatteryWnd", nullptr)) {
             PostMessageW(w, WM_CLOSE, 0, 0);
@@ -1090,7 +1076,6 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR cmdLine, int) {
 
     MSG m;
     while (GetMessageW(&m, nullptr, 0, 0) > 0) {
-        if (report::PreTranslate(&m)) continue;
         TranslateMessage(&m);
         DispatchMessageW(&m);
     }

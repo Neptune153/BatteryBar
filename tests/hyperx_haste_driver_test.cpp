@@ -1,5 +1,5 @@
 // Exercise the HyperX Pulsefire Haste 2 driver with a simulated HID transport; no hardware access.
-#include "../src/drivers/drivers.h"
+#include "../src/core/drivers/drivers.h"
 
 #include <cassert>
 #include <cstdio>

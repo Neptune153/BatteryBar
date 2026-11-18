@@ -1,6 +1,6 @@
 // Sora V2 receiver and USB cable (1915:AE1C / AE11), from PR #242. The Ten / Ten Air tests are in
 // ninjutso_driver_test.cpp. Exercises the production driver with simulated replies; no hardware access.
-#include "../src/drivers/drivers.h"
+#include "../src/core/drivers/drivers.h"
 
 #include <cassert>
 #include <cstdio>

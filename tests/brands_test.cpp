@@ -1,7 +1,7 @@
 // Brand recognition: driver key, vendor id, name, and the look-alikes that must stay plain.
 #include <cstdio>
 
-#include "../src/brands.h"
+#include "../src/text/brands.h"
 
 static int failures = 0;
 

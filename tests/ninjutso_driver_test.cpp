@@ -1,5 +1,5 @@
 // Exercise the production driver with simulated replies; no hardware access.
-#include "../src/drivers/drivers.h"
+#include "../src/core/drivers/drivers.h"
 
 #include <cassert>
 #include <cstdio>

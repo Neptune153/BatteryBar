@@ -1,5 +1,5 @@
 // Production poller with a simulated HID transport; fixtures captured from an L7 Arctic.
-#include "../src/drivers/drivers.h"
+#include "../src/core/drivers/drivers.h"
 
 #include <cassert>
 #include <cstdio>

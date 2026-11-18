@@ -1,5 +1,5 @@
 // Simulated HID transport exercising PollArbiter alongside PollLamzu on shared vendor id 373E.
-#include "../src/drivers/drivers.h"
+#include "../src/core/drivers/drivers.h"
 
 #include <cassert>
 #include <cstdio>

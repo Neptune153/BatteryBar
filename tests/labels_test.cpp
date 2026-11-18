@@ -1,7 +1,7 @@
 // Checks the short captions used to tell apart devices of the same kind in the taskbar widget.
 #include <cstdio>
 
-#include "../src/labels.h"
+#include "../src/text/labels.h"
 
 static int failures = 0;
 

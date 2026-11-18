@@ -1,6 +1,6 @@
 // Production Alienware AW920H poller with a simulated HID transport; replies captured from an AW920H
 // on its 413C:A515 dongle (and seen in Alienware Command Center's packet log).
-#include "../src/drivers/drivers.h"
+#include "../src/core/drivers/drivers.h"
 
 #include <cstdio>
 
