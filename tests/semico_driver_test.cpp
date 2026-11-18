@@ -11,9 +11,9 @@ std::map<std::wstring, std::vector<std::vector<BYTE>>> replies;
 std::vector<std::vector<BYTE>> writes;
 int opens = 0;
 
-HidColl Collection(USHORT vid, USHORT pid, const wchar_t* path, int iface = 0, USHORT page = 0xFF02,
+HidCollection Collection(USHORT vid, USHORT pid, const wchar_t* path, int iface = 0, USHORT page = 0xFF02,
                    USHORT usage = 0x0002, USHORT len = 65) {
-    HidColl c;
+    HidCollection c;
     c.path = path;
     c.vid = vid;
     c.pid = pid;
@@ -40,13 +40,13 @@ std::vector<BYTE> Reply(BYTE percent, BYTE state) {
 }  // namespace
 
 // Stand-ins for the Win32 HID transport. The production driver is linked unchanged.
-bool HidDev::Open(const HidColl& c) {
-    c_ = c;
-    h_ = reinterpret_cast<HANDLE>(1);
+bool HidDev::Open(const HidCollection& c) {
+    coll_ = c;
+    handle_ = reinterpret_cast<HANDLE>(1);
     ++opens;
     return true;
 }
-void HidDev::Close() { h_ = INVALID_HANDLE_VALUE; }
+void HidDev::Close() { handle_ = INVALID_HANDLE_VALUE; }
 void HidDev::Flush() {}
 bool HidDev::Write(const std::vector<BYTE>& data, int timeoutMs) {
     assert(timeoutMs > 0 && timeoutMs <= 1000);
@@ -55,13 +55,13 @@ bool HidDev::Write(const std::vector<BYTE>& data, int timeoutMs) {
 }
 int HidDev::Read(std::vector<BYTE>& out, int timeoutMs) {
     assert(timeoutMs > 0 && timeoutMs <= 1000);
-    auto& q = replies[c_.path];
+    auto& q = replies[coll_.path];
     if (q.empty()) return -1;
     out = q.front();
     q.erase(q.begin());
     return (int)out.size();
 }
-std::wstring HidProduct(const HidColl& c) {
+std::wstring HidProduct(const HidCollection& c) {
     if (c.pid == 0x8FFF) return L"2.4 Wireless Device";
     if (c.pid == 0xA034) return L"USB Gaming Keyboard";
     return L"";

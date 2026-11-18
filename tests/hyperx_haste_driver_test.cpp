@@ -14,8 +14,8 @@ Reports pending;
 std::vector<std::vector<BYTE>> writes;
 int opens = 0;
 
-HidColl Collection(USHORT pid, USHORT page, USHORT inLen = 64, USHORT outLen = 64) {
-    HidColl c;
+HidCollection Collection(USHORT pid, USHORT page, USHORT inLen = 64, USHORT outLen = 64) {
+    HidCollection c;
     c.path = L"hyperx";
     c.vid = 0x03F0;
     c.pid = pid;
@@ -42,7 +42,7 @@ const std::vector<BYTE> kNoise1 = Report(0x44, 0x01), kNoise2 = Report(0x45, 0x0
 const std::vector<BYTE> kAskLink = { 0x52, 0x01 };
 const std::vector<BYTE> kAskBattery = { 0x50, 0x02 };
 
-PollContext Poll(const HidColl& c, std::map<std::pair<BYTE, BYTE>, Reports> replies) {
+PollContext Poll(const HidCollection& c, std::map<std::pair<BYTE, BYTE>, Reports> replies) {
     script = std::move(replies);
     pending.clear();
     writes.clear();
@@ -57,14 +57,14 @@ std::map<std::pair<BYTE, BYTE>, Reports> Dongle(const std::vector<BYTE>& link, c
 }  // namespace
 
 // Stand-ins for the Win32 HID transport. The production driver is linked unchanged.
-bool HidDev::Open(const HidColl& c) {
-    c_ = c;
-    h_ = reinterpret_cast<HANDLE>(1);
+bool HidDev::Open(const HidCollection& c) {
+    coll_ = c;
+    handle_ = reinterpret_cast<HANDLE>(1);
     overlapped_ = true;
     ++opens;
     return true;
 }
-void HidDev::Close() { h_ = INVALID_HANDLE_VALUE; }
+void HidDev::Close() { handle_ = INVALID_HANDLE_VALUE; }
 bool HidDev::Write(const std::vector<BYTE>& data, int) {
     assert(data.size() == 2);
     writes.push_back(data);

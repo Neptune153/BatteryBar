@@ -41,8 +41,8 @@ std::vector<BYTE> Battery(BYTE pct, BYTE charging = 0, BYTE critical = 0, int cr
     return r;
 }
 
-HidColl Collection() {
-    HidColl c;
+HidCollection Collection() {
+    HidCollection c;
     c.vid = 0x413C;
     c.pid = 0xA515;
     c.iface = 5;
@@ -55,8 +55,8 @@ HidColl Collection() {
 }
 
 // The dongle's consumer-control collection on the same interface.
-HidColl ConsumerCollection() {
-    HidColl c = Collection();
+HidCollection ConsumerCollection() {
+    HidCollection c = Collection();
     c.path = L"dongle-col01";
     c.caps.UsagePage = 0x000C;
     c.caps.InputReportByteLength = 2;
@@ -91,9 +91,9 @@ void Level(std::vector<std::vector<BYTE>> r, int percent, bool charging = false)
 }
 }  // namespace
 
-bool HidDev::Open(const HidColl& c) {
+bool HidDev::Open(const HidCollection& c) {
     ++opens;
-    c_ = c;
+    coll_ = c;
     CHECK(c.path == L"dongle-col02");  // never the consumer-control collection
     return openOk;
 }

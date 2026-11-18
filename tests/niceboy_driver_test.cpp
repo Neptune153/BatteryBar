@@ -36,8 +36,8 @@ std::vector<BYTE> WithRaw(int raw, BYTE charging = 0) {
     return r;
 }
 
-HidColl Collection() {
-    HidColl c;
+HidCollection Collection() {
+    HidCollection c;
     c.vid = 0x248A;
     c.pid = 0xFA02;
     c.iface = 0;
@@ -49,13 +49,13 @@ HidColl Collection() {
 }
 
 // The receiver's other collections: mouse, consumer control, system control, keyboard.
-std::vector<HidColl> OtherCollections() {
-    std::vector<HidColl> v;
+std::vector<HidCollection> OtherCollections() {
+    std::vector<HidCollection> v;
     const struct { int iface; USHORT page, usage, in, out; } k[] = {
         { 0, 0x0001, 0x0002, 7, 0 }, { 0, 0x000C, 0x0001, 3, 0 }, { 0, 0x0001, 0x0080, 2, 0 }, { 1, 0x0001, 0x0006, 9, 2 },
     };
     for (auto& e : k) {
-        HidColl c = Collection();
+        HidCollection c = Collection();
         c.iface = e.iface;
         c.caps.UsagePage = e.page;
         c.caps.Usage = e.usage;
@@ -96,9 +96,9 @@ void Level(const std::vector<BYTE>& reply, int percent, int millivolts, bool cha
 }
 }  // namespace
 
-bool HidDev::Open(const HidColl& c) {
+bool HidDev::Open(const HidCollection& c) {
     ++opens;
-    c_ = c;
+    coll_ = c;
     CHECK(c.path == L"receiver-col04");  // never the mouse / keyboard collections
     return openOk;
 }

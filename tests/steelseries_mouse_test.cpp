@@ -17,8 +17,8 @@ BYTE replyValue = 0, expectedCommand = 0xD2;
 int replySize = 2;
 bool writeOk = true;
 
-HidColl Collection(USHORT pid) {
-    HidColl c;
+HidCollection Collection(USHORT pid) {
+    HidCollection c;
     c.vid = 0x1038;
     c.pid = pid;
     c.iface = 3;
@@ -36,8 +36,8 @@ PollContext Poll(USHORT pid) {
 }
 }  // namespace
 
-bool HidDev::Open(const HidColl& c) { c_ = c; h_ = reinterpret_cast<HANDLE>(1); return true; }
-void HidDev::Close() { h_ = INVALID_HANDLE_VALUE; }
+bool HidDev::Open(const HidCollection& c) { coll_ = c; handle_ = reinterpret_cast<HANDLE>(1); return true; }
+void HidDev::Close() { handle_ = INVALID_HANDLE_VALUE; }
 void HidDev::Flush() {}
 bool HidDev::Write(const std::vector<BYTE>& data, int) {
     CHECK(data == std::vector<BYTE>({ 0x00, expectedCommand }));

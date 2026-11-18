@@ -6,8 +6,8 @@ namespace {
 std::vector<std::vector<BYTE>> replies;
 bool openOk = true, writeOk = true;
 int opens = 0;
-HidColl Collection() {
-    HidColl c;
+HidCollection Collection() {
+    HidCollection c;
     c.path = L"astro-test";
     c.vid = 0x046D; c.pid = 0x0B0B;
     c.caps.UsagePage = 0xFF32; c.caps.Usage = 0x74;
@@ -17,13 +17,13 @@ HidColl Collection() {
 std::vector<BYTE> Reply(BYTE level, BYTE dock = 0) {
     return {2, 12, 6, 0, 6, 12, level, 100, dock};
 }
-PollContext Poll(std::vector<std::vector<BYTE>> data, HidColl c = Collection()) {
+PollContext Poll(std::vector<std::vector<BYTE>> data, HidCollection c = Collection()) {
     replies = std::move(data);
     PollContext ctx; ctx.colls = {c}; PollAstro(ctx); return ctx;
 }
 }
 std::wstring Hex4(USHORT v) { wchar_t b[8]; swprintf(b, 8, L"%04X", v); return b; }  // used by the Gen 3 / Gen 4 / A20 paths
-bool HidDev::Open(const HidColl& c) { ++opens; c_ = c; return openOk; }
+bool HidDev::Open(const HidCollection& c) { ++opens; coll_ = c; return openOk; }
 void HidDev::Close() {}
 void HidDev::Flush() {}
 bool HidDev::Write(const std::vector<BYTE>& data, int) {

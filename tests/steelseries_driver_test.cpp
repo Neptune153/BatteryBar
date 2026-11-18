@@ -17,7 +17,7 @@ PollContext Context(USHORT pid = 0x225D) {
     reply[1] = 0xB0;
     reply[6] = 4;
     reply[15] = 0x08;
-    HidColl c;
+    HidCollection c;
     c.vid = 0x1038;
     c.pid = pid;
     c.iface = 4;
@@ -32,8 +32,8 @@ PollContext Context(USHORT pid = 0x225D) {
 }
 }  // namespace
 
-bool HidDev::Open(const HidColl& c) {
-    c_ = c;
+bool HidDev::Open(const HidCollection& c) {
+    coll_ = c;
     ++opens;
     return openOk;
 }
@@ -44,7 +44,7 @@ bool HidDev::Write(const std::vector<BYTE>& request, int timeoutMs) {
     assert(timeoutMs > 0 && timeoutMs <= 500);
     ++writes;
     // The 225D base station rejects this report ID on its FF00 collection.
-    return writeOk && c_.page() == 0xFFC0;
+    return writeOk && coll_.page() == 0xFFC0;
 }
 int HidDev::Read(std::vector<BYTE>& out, int timeoutMs) {
     assert(timeoutMs > 0 && timeoutMs <= 1000);

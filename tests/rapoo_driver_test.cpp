@@ -9,8 +9,8 @@ namespace {
 std::map<std::wstring, std::vector<std::vector<BYTE>>> reports;
 int opens = 0;
 
-HidColl Collection(USHORT pid, const wchar_t* path, USHORT length = 19) {
-    HidColl c;
+HidCollection Collection(USHORT pid, const wchar_t* path, USHORT length = 19) {
+    HidCollection c;
     c.path = path;
     c.vid = 0x24AE;
     c.pid = pid;
@@ -27,22 +27,22 @@ std::vector<BYTE> Status(bool cable, BYTE percent = 25) {
 }  // namespace
 
 // Stand-ins for the Win32 HID transport. The production driver is linked unchanged.
-bool HidDev::Open(const HidColl& c) {
-    c_ = c;
-    h_ = reinterpret_cast<HANDLE>(1);
+bool HidDev::Open(const HidCollection& c) {
+    coll_ = c;
+    handle_ = reinterpret_cast<HANDLE>(1);
     ++opens;
     return true;
 }
-void HidDev::Close() { h_ = INVALID_HANDLE_VALUE; }
+void HidDev::Close() { handle_ = INVALID_HANDLE_VALUE; }
 int HidDev::Read(std::vector<BYTE>& out, int timeoutMs) {
     assert(timeoutMs > 0 && timeoutMs <= 5000);
-    auto& queue = reports[c_.path];
+    auto& queue = reports[coll_.path];
     if (queue.empty()) return -1;
     out = queue.front();
     queue.erase(queue.begin());
     return (int)out.size();
 }
-std::wstring HidProduct(const HidColl&) { return L"Rapoo Gaming Device"; }
+std::wstring HidProduct(const HidCollection&) { return L"Rapoo Gaming Device"; }
 std::wstring Hex4(USHORT v) {
     wchar_t text[8];
     swprintf(text, 8, L"%04X", v);

@@ -12,8 +12,8 @@ int opens = 0, sends = 0, reads = 0;
 int readDelayMs = 0;
 bool openOk = true, featureOpenOk = true, sendOk = true;
 
-HidColl Collection(bool input, USHORT pid = 0x1074) {
-    HidColl c;
+HidCollection Collection(bool input, USHORT pid = 0x1074) {
+    HidCollection c;
     c.vid = 0x260D;
     c.pid = pid;
     c.iface = 1;
@@ -42,37 +42,37 @@ PollContext Context(USHORT pid = 0x1074) {
 }
 }  // namespace
 
-bool HidDev::Open(const HidColl& c) {
+bool HidDev::Open(const HidCollection& c) {
     assert(c.path == L"input");
-    c_ = c;
+    coll_ = c;
     ++opens;
     return openOk;
 }
-bool HidDev::OpenFeatureOnly(const HidColl& c) {
+bool HidDev::OpenFeatureOnly(const HidCollection& c) {
     assert(c.path == L"feature");
-    c_ = c;
+    coll_ = c;
     ++opens;
     return featureOpenOk;
 }
 void HidDev::Close() {}
-void HidDev::Flush() { assert(c_.path == L"input"); }
+void HidDev::Flush() { assert(coll_.path == L"input"); }
 bool HidDev::SetFeature(const std::vector<BYTE>& request) {
-    assert(c_.path == L"feature");
+    assert(coll_.path == L"feature");
     std::vector<BYTE> expected(17, 0);
     expected[0] = 0x08;
     expected[1] = 0x04;
     expected[16] = 0x49;
     assert(request == expected);
     ++sends;
-    queriedPids.push_back(c_.pid);
+    queriedPids.push_back(coll_.pid);
     return sendOk;
 }
 int HidDev::Read(std::vector<BYTE>& out, int timeoutMs) {
-    assert(c_.path == L"input" && !queriedPids.empty() && queriedPids.back() == c_.pid);
+    assert(coll_.path == L"input" && !queriedPids.empty() && queriedPids.back() == coll_.pid);
     assert(timeoutMs > 0 && timeoutMs <= 1000);
     ++reads;
     if (readDelayMs) Sleep((DWORD)(timeoutMs < readDelayMs ? timeoutMs : readDelayMs));
-    auto& pending = c_.pid == 0x1090 ? wiredReplies : replies;
+    auto& pending = coll_.pid == 0x1090 ? wiredReplies : replies;
     if (pending.empty()) return -1;
     out = pending.front();
     pending.erase(pending.begin());

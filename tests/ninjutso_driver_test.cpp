@@ -20,8 +20,8 @@ std::vector<std::vector<BYTE>> writes;
 int opens = 0, queries = 0, featureReads = 0;
 bool openOk = true, sendOk = true;
 
-HidColl Collection() {
-    HidColl c;
+HidCollection Collection() {
+    HidCollection c;
     c.vid = 0x1915;
     c.pid = 0xAE1C;
     c.caps.UsagePage = 0xFFA0;
@@ -30,8 +30,8 @@ HidColl Collection() {
     return c;
 }
 
-HidColl TenColl(USHORT pid = 0xEB01) {
-    HidColl c;
+HidCollection TenColl(USHORT pid = 0xEB01) {
+    HidCollection c;
     c.vid = 0x093A;
     c.pid = pid;
     c.path = L"test";
@@ -70,7 +70,7 @@ PollContext Poll(std::vector<std::vector<BYTE>> data) {
     return ctx;
 }
 
-PollContext PollTenRun(std::deque<std::vector<BYTE>> data, HidColl c = TenColl()) {
+PollContext PollTenRun(std::deque<std::vector<BYTE>> data, HidCollection c = TenColl()) {
     replies = std::move(data);
     writes.clear();
     opens = 0;
@@ -83,15 +83,15 @@ PollContext PollTenRun(std::deque<std::vector<BYTE>> data, HidColl c = TenColl()
 }
 }  // namespace
 
-bool HidDev::OpenFeatureOnly(const HidColl& c) {
-    c_ = c;
-    h_ = reinterpret_cast<HANDLE>(1);
+bool HidDev::OpenFeatureOnly(const HidCollection& c) {
+    coll_ = c;
+    handle_ = reinterpret_cast<HANDLE>(1);
     ++opens;
     return openOk;
 }
-void HidDev::Close() { h_ = INVALID_HANDLE_VALUE; }
+void HidDev::Close() { handle_ = INVALID_HANDLE_VALUE; }
 bool HidDev::SetFeature(const std::vector<BYTE>& data) {
-    if (c_.vid == 0x093A) {
+    if (coll_.vid == 0x093A) {
         CHECK(data.size() == 16);
         CHECK(data[0] == 0x06 && data[4] == 1);
         for (size_t i = 2; i < data.size(); ++i)
@@ -109,7 +109,7 @@ bool HidDev::SetFeature(const std::vector<BYTE>& data) {
     return sendOk;
 }
 bool HidDev::GetFeature(BYTE id, std::vector<BYTE>& out) {
-    if (c_.vid == 0x093A) {
+    if (coll_.vid == 0x093A) {
         CHECK(id == 0x06);
         ++featureReads;
     } else {
@@ -120,7 +120,7 @@ bool HidDev::GetFeature(BYTE id, std::vector<BYTE>& out) {
     replies.pop_front();
     return true;
 }
-std::wstring HidProduct(const HidColl&) { return L"Ninjutso Ten Air"; }
+std::wstring HidProduct(const HidCollection&) { return L"Ninjutso Ten Air"; }
 std::wstring Hex4(USHORT value) {
     wchar_t s[8];
     swprintf(s, 8, L"%04X", value);

@@ -10,8 +10,8 @@ std::vector<std::vector<BYTE>> pending;
 int opens = 0;
 int writes = 0;
 
-HidColl Collection(USHORT pid = 0x1014, USHORT page = 0xFF01, USHORT outLen = 64, USHORT inLen = 64) {
-    HidColl c;
+HidCollection Collection(USHORT pid = 0x1014, USHORT page = 0xFF01, USHORT outLen = 64, USHORT inLen = 64) {
+    HidCollection c;
     c.path = L"mchose";
     c.vid = 0x3837;
     c.pid = pid;
@@ -53,7 +53,7 @@ std::vector<BYTE> NotLinked() {
     return r;
 }
 
-PollContext Poll(std::vector<std::vector<BYTE>> replies, const HidColl& c = Collection()) {
+PollContext Poll(std::vector<std::vector<BYTE>> replies, const HidCollection& c = Collection()) {
     pending = std::move(replies);
     writes = 0;
     PollContext ctx;
@@ -64,13 +64,13 @@ PollContext Poll(std::vector<std::vector<BYTE>> replies, const HidColl& c = Coll
 }  // namespace
 
 // Stand-ins for the Win32 HID transport. The production driver is linked unchanged.
-bool HidDev::Open(const HidColl& c) {
-    c_ = c;
-    h_ = reinterpret_cast<HANDLE>(1);
+bool HidDev::Open(const HidCollection& c) {
+    coll_ = c;
+    handle_ = reinterpret_cast<HANDLE>(1);
     ++opens;
     return true;
 }
-void HidDev::Close() { h_ = INVALID_HANDLE_VALUE; }
+void HidDev::Close() { handle_ = INVALID_HANDLE_VALUE; }
 // The scripted replies stand for what the receiver will answer next, so there is nothing stale to drop.
 void HidDev::Flush() {}
 bool HidDev::Write(const std::vector<BYTE>& data, int) {
@@ -89,7 +89,7 @@ int HidDev::Read(std::vector<BYTE>& out, int timeoutMs) {
     pending.erase(pending.begin());
     return (int)out.size();
 }
-std::wstring HidProduct(const HidColl&) { return L"MCHOSE K7 V2 Ultra+"; }
+std::wstring HidProduct(const HidCollection&) { return L"MCHOSE K7 V2 Ultra+"; }
 std::wstring Hex4(USHORT v) {
     wchar_t text[8];
     swprintf(text, 8, L"%04X", v);

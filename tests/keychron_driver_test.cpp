@@ -12,8 +12,8 @@ std::vector<std::vector<BYTE>> pending;
 std::vector<std::vector<BYTE>> writes;
 int opens = 0;
 
-HidColl Collection(USHORT pid, USHORT page, USHORT usage) {
-    HidColl c;
+HidCollection Collection(USHORT pid, USHORT page, USHORT usage) {
+    HidCollection c;
     c.path = L"keychron";
     c.vid = 0x3434;
     c.pid = pid;
@@ -47,7 +47,7 @@ const std::vector<BYTE> kAsk01 = Request(0x01, 0x01, 0x1E);  // 0xA1 - (01 + 81 
 const std::vector<BYTE> kAsk41 = Request(0x41, 0x01, 0xDE);  // 0xA1 - (41 + 81 + 01)
 const std::vector<BYTE> kAsk40 = Request(0x40, 0x00, 0xE0);  // 0xA1 - (40 + 81 + 00)
 
-PollContext Poll(const HidColl& c, std::map<std::pair<BYTE, BYTE>, std::vector<BYTE>> replies) {
+PollContext Poll(const HidCollection& c, std::map<std::pair<BYTE, BYTE>, std::vector<BYTE>> replies) {
     script = std::move(replies);
     pending.clear();
     writes.clear();
@@ -62,8 +62,8 @@ std::vector<BYTE> featureReply;               // what GetFeature returns after a
 std::vector<std::vector<BYTE>> featureWrites;
 bool featureQueued = false;
 
-HidColl LegacyCollection(USHORT pid) {
-    HidColl c;
+HidCollection LegacyCollection(USHORT pid) {
+    HidCollection c;
     c.path = L"keychron-1k";
     c.vid = 0x3434;
     c.pid = pid;
@@ -78,7 +78,7 @@ std::vector<BYTE> Status(BYTE ok, USHORT vid, USHORT pid, BYTE battery, BYTE cha
     return { 0x51, 0x06, ok, 0x00, (BYTE)vid, (BYTE)(vid >> 8), (BYTE)pid, (BYTE)(pid >> 8), 0, 0, 0, battery, charging };
 }
 
-PollContext PollReceiver1k(const HidColl& c, std::vector<BYTE> reply) {
+PollContext PollReceiver1k(const HidCollection& c, std::vector<BYTE> reply) {
     featureReply = std::move(reply);
     featureWrites.clear();
     featureQueued = false;
@@ -87,14 +87,14 @@ PollContext PollReceiver1k(const HidColl& c, std::vector<BYTE> reply) {
 }  // namespace
 
 // Stand-ins for the Win32 HID transport. The production driver is linked unchanged.
-bool HidDev::Open(const HidColl& c) {
-    c_ = c;
-    h_ = reinterpret_cast<HANDLE>(1);
+bool HidDev::Open(const HidCollection& c) {
+    coll_ = c;
+    handle_ = reinterpret_cast<HANDLE>(1);
     overlapped_ = true;
     ++opens;
     return true;
 }
-void HidDev::Close() { h_ = INVALID_HANDLE_VALUE; }
+void HidDev::Close() { handle_ = INVALID_HANDLE_VALUE; }
 void HidDev::Flush() { pending.clear(); }
 bool HidDev::Write(const std::vector<BYTE>& data, int) {
     assert(data.size() == 65 && data[0] == 0);
@@ -110,7 +110,7 @@ int HidDev::Read(std::vector<BYTE>& out, int timeoutMs) {
     pending.erase(pending.begin());
     return (int)out.size();
 }
-bool HidDev::OpenFeatureOnly(const HidColl& c) { return Open(c); }
+bool HidDev::OpenFeatureOnly(const HidCollection& c) { return Open(c); }
 bool HidDev::SetFeature(const std::vector<BYTE>& data) {
     featureWrites.push_back(data);
     featureQueued = data.size() >= 2 && data[0] == 0x51 && data[1] == 0x06 && !featureReply.empty();
@@ -118,13 +118,13 @@ bool HidDev::SetFeature(const std::vector<BYTE>& data) {
 }
 bool HidDev::GetFeature(BYTE reportId, std::vector<BYTE>& out) {
     assert(reportId == 0x51);
-    out.assign(c_.featLen(), 0);
+    out.assign(coll_.featLen(), 0);
     out[0] = reportId;
     if (!featureQueued) return true;  // nothing queued yet: the report reads back empty
     std::copy(featureReply.begin(), featureReply.end(), out.begin());
     return true;
 }
-std::wstring HidProduct(const HidColl&) { return L"Keychron 4K Link"; }
+std::wstring HidProduct(const HidCollection&) { return L"Keychron 4K Link"; }
 std::wstring Hex4(USHORT v) {
     wchar_t text[8];
     swprintf(text, 8, L"%04X", v);

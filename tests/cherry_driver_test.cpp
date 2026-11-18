@@ -10,8 +10,8 @@ std::vector<std::vector<BYTE>> writes, pending;
 int opens = 0;
 bool openOk = true;
 
-HidColl Collection(USHORT pid = 0x00EA, USHORT page = 0xFF1C, USHORT usage = 0x0092, USHORT len = 64) {
-    HidColl c;
+HidCollection Collection(USHORT pid = 0x00EA, USHORT page = 0xFF1C, USHORT usage = 0x0092, USHORT len = 64) {
+    HidCollection c;
     c.path = L"test-dongle";
     c.vid = 0x046A;
     c.pid = pid;
@@ -31,7 +31,7 @@ std::vector<BYTE> Reply(BYTE percent, BYTE usb = 0, BYTE type = 0x1A) {
     return r;
 }
 
-PollContext Poll(std::vector<std::vector<std::vector<BYTE>>> perWrite, std::vector<HidColl> colls = { Collection() }) {
+PollContext Poll(std::vector<std::vector<std::vector<BYTE>>> perWrite, std::vector<HidCollection> colls = { Collection() }) {
     script = std::move(perWrite);
     writes.clear();
     pending.clear();
@@ -43,15 +43,15 @@ PollContext Poll(std::vector<std::vector<std::vector<BYTE>>> perWrite, std::vect
 }
 }  // namespace
 
-bool HidDev::Open(const HidColl& c) {
+bool HidDev::Open(const HidCollection& c) {
     ++opens;
     if (!openOk) return false;
-    c_ = c;
-    h_ = reinterpret_cast<HANDLE>(1);
+    coll_ = c;
+    handle_ = reinterpret_cast<HANDLE>(1);
     overlapped_ = true;
     return true;
 }
-void HidDev::Close() { h_ = INVALID_HANDLE_VALUE; }
+void HidDev::Close() { handle_ = INVALID_HANDLE_VALUE; }
 void HidDev::Flush() { pending.clear(); }
 bool HidDev::Write(const std::vector<BYTE>& data, int) {
     writes.push_back(data);

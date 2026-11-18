@@ -9,8 +9,8 @@ int opens = 0, queries = 0;
 bool sendOk = true;
 bool openOk = true;
 
-HidColl Collection() {
-    HidColl c;
+HidCollection Collection() {
+    HidCollection c;
     c.path = L"test-receiver";
     c.vid = 0x3057;
     c.pid = 0x1002;
@@ -42,14 +42,14 @@ PollContext Poll(std::vector<std::vector<BYTE>> data, USHORT pid = 0x1002) {
     return ctx;
 }
 }
-bool HidDev::OpenFeatureOnly(const HidColl& c) {
+bool HidDev::OpenFeatureOnly(const HidCollection& c) {
     ++opens;
     if (!openOk) return false;
-    c_ = c;
-    h_ = reinterpret_cast<HANDLE>(1);
+    coll_ = c;
+    handle_ = reinterpret_cast<HANDLE>(1);
     return true;
 }
-void HidDev::Close() { h_ = INVALID_HANDLE_VALUE; }
+void HidDev::Close() { handle_ = INVALID_HANDLE_VALUE; }
 bool HidDev::SetFeature(const std::vector<BYTE>& data) {
     auto expected = std::vector<BYTE>(64, 0);
     expected[0] = 0x0E;

@@ -15,8 +15,8 @@ std::set<std::wstring> rejectWrites;  // collections without the output report t
 int opens = 0;
 std::wstring openPath;
 
-HidColl Collection(USHORT pid, const wchar_t* path, USHORT usage = 1, USHORT page = 0xFF00) {
-    HidColl c;
+HidCollection Collection(USHORT pid, const wchar_t* path, USHORT usage = 1, USHORT page = 0xFF00) {
+    HidCollection c;
     c.path = path;
     c.vid = 0x361D;
     c.pid = pid;
@@ -41,7 +41,7 @@ std::vector<BYTE> Ulx(BYTE command, std::vector<BYTE> payload) { return Reply(0x
 std::vector<BYTE> Slx(BYTE command, std::vector<BYTE> payload) { return Reply(0x02, command, payload); }
 std::vector<BYTE> Millivolts(int mv) { return { (BYTE)(mv & 0xFF), (BYTE)(mv >> 8) }; }
 
-PollContext Poll(std::vector<HidColl> colls, std::map<std::wstring, std::vector<std::vector<BYTE>>> data) {
+PollContext Poll(std::vector<HidCollection> colls, std::map<std::wstring, std::vector<std::vector<BYTE>>> data) {
     bursts = std::move(data);
     pending.clear();
     writes.clear();
@@ -56,10 +56,10 @@ std::vector<BYTE> Get(BYTE id, BYTE command) { return { id, 2, (BYTE)(0x80 | com
 }  // namespace
 
 // Stand-ins for the HID transport. The production driver is linked unchanged.
-bool HidDev::Open(const HidColl& c) {
-    c_ = c;
+bool HidDev::Open(const HidCollection& c) {
+    coll_ = c;
 #ifdef _WIN32
-    h_ = reinterpret_cast<HANDLE>(1);
+    handle_ = reinterpret_cast<HANDLE>(1);
     overlapped_ = true;
 #else
     fd_ = 1;
@@ -71,7 +71,7 @@ bool HidDev::Open(const HidColl& c) {
 }
 void HidDev::Close() {
 #ifdef _WIN32
-    h_ = INVALID_HANDLE_VALUE;
+    handle_ = INVALID_HANDLE_VALUE;
 #else
     fd_ = -1;
 #endif

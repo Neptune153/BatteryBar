@@ -28,8 +28,8 @@ void Check(bool result, const char* expression, int line) {
 }
 #define CHECK(x) Check((x), #x, __LINE__)
 
-HidColl Collection(bool cable = false) {
-    HidColl c;
+HidCollection Collection(bool cable = false) {
+    HidCollection c;
     c.vid = 0x248A;
     c.pid = cable ? 0xFF4E : 0xFF4C;
     c.iface = cable ? 2 : 1;
@@ -72,8 +72,8 @@ void Connected(const std::vector<BYTE>& reply, int percent, bool cable, bool cha
 }
 }  // namespace
 
-bool HidDev::OpenFeatureOnly(const HidColl& c) {
-    c_ = c;
+bool HidDev::OpenFeatureOnly(const HidCollection& c) {
+    coll_ = c;
     ++opens;
     // The status report is 21 bytes; 1001 is the largest *other* report on this collection.
     assert(c.featLen() == 21);
@@ -82,19 +82,19 @@ bool HidDev::OpenFeatureOnly(const HidColl& c) {
 void HidDev::Close() {}
 bool HidDev::SetFeature(const std::vector<BYTE>& data) {
     const std::vector<BYTE> expected = {0x51,0x06,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    assert(data == expected && c_.featLen() == 21);
+    assert(data == expected && coll_.featLen() == 21);
     ++sends;
     return sendOk;
 }
 bool HidDev::GetFeature(BYTE id, std::vector<BYTE>& out) {
-    assert(id == 0x51 && c_.featLen() == 21);
+    assert(id == 0x51 && coll_.featLen() == 21);
     ++reads;
     if (replies.empty()) return false;
     out = replies.front();
     if (!repeatReply) replies.erase(replies.begin());
     return true;
 }
-std::wstring HidProduct(const HidColl&) { return product; }
+std::wstring HidProduct(const HidCollection&) { return product; }
 
 int main() {
     current = "captured wireless 64%";

@@ -10,8 +10,8 @@ std::vector<std::vector<BYTE>> replies;
 int opens = 0, queries = 0;
 bool sendOk = true;
 
-HidColl Collection() {
-    HidColl c;
+HidCollection Collection() {
+    HidCollection c;
     c.vid = 0x1915;
     c.pid = 0xAE1C;
     c.caps.UsagePage = 0xFFA0;
@@ -30,13 +30,13 @@ std::vector<BYTE> Status(BYTE battery, bool charging = false, bool online = true
     return r;
 }
 
-HidColl Cable() {
-    HidColl c = Collection();
+HidCollection Cable() {
+    HidCollection c = Collection();
     c.pid = 0xAE11;
     return c;
 }
 
-PollContext Poll(std::vector<std::vector<BYTE>> data, std::vector<HidColl> colls = { Collection() }) {
+PollContext Poll(std::vector<std::vector<BYTE>> data, std::vector<HidCollection> colls = { Collection() }) {
     replies = std::move(data);
     queries = 0;
     PollContext ctx;
@@ -46,13 +46,13 @@ PollContext Poll(std::vector<std::vector<BYTE>> data, std::vector<HidColl> colls
 }
 }  // namespace
 
-bool HidDev::OpenFeatureOnly(const HidColl& c) {
-    c_ = c;
-    h_ = reinterpret_cast<HANDLE>(1);
+bool HidDev::OpenFeatureOnly(const HidCollection& c) {
+    coll_ = c;
+    handle_ = reinterpret_cast<HANDLE>(1);
     ++opens;
     return true;
 }
-void HidDev::Close() { h_ = INVALID_HANDLE_VALUE; }
+void HidDev::Close() { handle_ = INVALID_HANDLE_VALUE; }
 bool HidDev::SetFeature(const std::vector<BYTE>& data) {
     auto expected = std::vector<BYTE>(32, 0);
     expected[0] = 5;
@@ -69,7 +69,7 @@ bool HidDev::GetFeature(BYTE id, std::vector<BYTE>& out) {
     replies.erase(replies.begin());
     return true;
 }
-std::wstring HidProduct(const HidColl&) { return L""; }  // used by the Ten driver, not reached here
+std::wstring HidProduct(const HidCollection&) { return L""; }  // used by the Ten driver, not reached here
 std::wstring Hex4(USHORT value) {
     wchar_t s[8];
     swprintf(s, 8, L"%04X", value);

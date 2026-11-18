@@ -10,8 +10,8 @@ std::vector<std::vector<BYTE>> replies;
 int opens = 0, sends = 0, reads = 0;
 bool openOk = true, sendOk = true;
 
-HidColl MakeColl(USHORT vid, USHORT pid, USHORT page = 0xFFFF, USHORT usage = 0, USHORT featLen = 65) {
-    HidColl c;
+HidCollection MakeColl(USHORT vid, USHORT pid, USHORT page = 0xFFFF, USHORT usage = 0, USHORT featLen = 65) {
+    HidCollection c;
     c.vid = vid;
     c.pid = pid;
     c.iface = 2;
@@ -51,15 +51,15 @@ void Reset() {
 
 }  // namespace
 
-bool HidDev::OpenFeatureOnly(const HidColl& c) {
+bool HidDev::OpenFeatureOnly(const HidCollection& c) {
     ++opens;
     if (!openOk) return false;
-    c_ = c;
-    h_ = reinterpret_cast<HANDLE>(1);
+    coll_ = c;
+    handle_ = reinterpret_cast<HANDLE>(1);
     return true;
 }
 
-void HidDev::Close() { h_ = INVALID_HANDLE_VALUE; }
+void HidDev::Close() { handle_ = INVALID_HANDLE_VALUE; }
 
 bool HidDev::SetFeature(const std::vector<BYTE>& data) {
     // Both PollArbiter and PollLamzu must only ever send the read-only 0x83 battery status query.
