@@ -1,6 +1,6 @@
 // Machenike L7 Arctic / L7 Mix. Read-state protocol from the official L7 Mix
 // app 1.0.0.8 (DeviceDriver.exe), verified on an L7 Arctic over receiver and cable.
-// See docs/machenike.md for attribution, captured replies and field semantics.
+// See docs/drivers/machenike.md for attribution, captured replies and field semantics.
 // Feature report 51, command 06, 21 bytes: [10] mode/link, [11] %, [12] charging.
 #include "drivers.h"
 

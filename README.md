@@ -2,7 +2,7 @@
 
 在 Windows 任务栏上显示无线设备的电量：耳机、鼠标、键盘、手柄、手机，一个都不少。
 
-![任务栏上的 BatteryBar](docs/screenshot.png)
+![任务栏上的 BatteryBar](docs/img/screenshot.png)
 
 BatteryBar 是 [Wireless Battery](https://github.com/krisgfx9/Wireless-Device-Battery-Monitor) 的本地分支，
 针对个人使用做了简化：只保留简体中文、去掉联网上报与 Xbox 支持、项目结构重新分层、改用 CMake 构建。
@@ -50,7 +50,7 @@ BatteryBar 是 [Wireless Battery](https://github.com/krisgfx9/Wireless-Device-Ba
 
 ## 安装
 
-- **安装包**：`dist\BatteryBar-Setup-<版本>.zip`，解压后双击 `install.bat`。
+- **安装包**：`dist\BatteryBar-Setup-<版本>.zip`（打包方法见 `installer/README.md`），解压后双击 `install.bat`。
   会安装到 `%LOCALAPPDATA%\Programs\BatteryBar`，创建开始菜单快捷方式，并登记到"应用和功能"。
   卸载运行同目录下的 `uninstall.bat`。
 - **便携版**：`BatteryBar.exe` 单独一个文件就能跑（蓝牙耳机额外需要 `headsetcontrol.exe`）。
@@ -112,10 +112,10 @@ src/
     brands.*            品牌配色
 res/                    图标、清单、资源脚本
 lang/                   UTF-8 翻译文件（`English = 中文`）
-tools/                  构建与测试脚本
+tools/                  构建、测试与图标生成脚本
 tests/                  驱动单元测试（模拟 HID 传输）
-docs/                   协议笔记与截图
-installer/              安装包脚本（无 Inno Setup 的本地版）
+docs/img/               截图`r`ndocs/drivers/           驱动协议笔记
+installer/              安装包脚本（Inno 版 / 免 Inno 的本地版）
 ```
 
 ## 新增一个设备
@@ -124,7 +124,7 @@ installer/              安装包脚本（无 Inno Setup 的本地版）
 2. 在 `src/core/drivers/drivers.h` 里声明；
 3. 在 `src/core/devices.cpp` 的 `PollAllDevices()` 里调用（顺序有讲究，先匹配的会 `Claim` 掉设备）；
 4. 在 `tests/` 里加一个用模拟 HID 传输的测试；
-5. 更新本文档。
+5. 更新本文档；抓包与字节布局记到 `docs/drivers/`（约定见 `docs/README.md`）。
 
 驱动守则：**只读**、精确匹配（只跟确认为该设备的厂商集合通信）、每个集合必须有超时（≤4 秒）、
 注明协议来源。细节见 `CONTRIBUTING.md`。

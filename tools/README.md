@@ -1,4 +1,4 @@
-# Local build helpers
+﻿# Local build helpers
 
 These scripts build the Windows app on the machine it was set up on. They are not needed to build
 the project elsewhere: `make` (MSYS2 MinGW-w64) and `build.bat` (MinGW on `PATH`) in the repository
@@ -19,3 +19,7 @@ therefore:
   compiled into `res\app.rc` as an `RCDATA` resource.
 
 `build\` and `temp\` are git-ignored; only `tools\` is tracked.
+
+## make-icon.py
+
+从 es\app.svg 生成 es\app.ico 与 es\app_light.ico，只在换图标时需要跑一次。
