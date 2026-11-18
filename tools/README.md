@@ -1,25 +1,14 @@
-﻿# Local build helpers
+# tools
 
-These scripts build the Windows app on the machine it was set up on. They are not needed to build
-the project elsewhere: `make` (MSYS2 MinGW-w64) and `build.bat` (MinGW on `PATH`) in the repository
-root are the regular entry points.
+构建、测试与资源脚本。
 
-| File | Purpose |
+| 文件 | 说明 |
 | --- | --- |
-| `build-msvc.bat` | Full build with MSVC 2022 + Windows SDK 10.0.22621 (`build\msvc\BatteryBar.exe`) |
+| `build-msvc.bat` | MSVC 2022 全量构建，输出 `build\msvc\BatteryBar.exe`。脚本自行定位 `vcvars64.bat`，把 `lang\*.txt` 合并为 `build\languages.txt`，编译 `src\` 下全部 `.cpp` 后链接。适用于未安装 CMake 或需要完全控制编译选项的情况。 |
+| `gen-languages.cmake` | 由 `CMakeLists.txt` 调用的语言合并脚本。也可单独运行：`cmake -DLANG_DIR=lang -DOUT=build\languages.txt -P tools\gen-languages.cmake` |
+| `run-tests.ps1` | 解析 `Makefile` 中 `TESTS` 表，逐个编译并运行 `tests\` 下的用例。 |
+| `make-icon.py` | 由 `res\app.svg` 生成 `res\app.ico` 与 `res\app_light.ico`，仅在更换图标时执行。 |
 
-## Why MSVC here
+## 已知问题
 
-The MinGW-w64 installed on this machine is from 2018 and lacks `devpkey.h` and
-`windows.system.power.h`, so `make` and `build.bat` cannot compile the sources. The MSVC script
-therefore:
-
-- adds `/DNOMINMAX`, because MSVC defines the `min`/`max` macros that clash with `std::min`/`std::max`;
-- rebuilds `build\languages.txt` from `lang\*.txt` before running `rc`, because the translations are
-  compiled into `res\app.rc` as an `RCDATA` resource.
-
-`build\` and `temp\` are git-ignored; only `tools\` is tracked.
-
-## make-icon.py
-
-从 es\app.svg 生成 es\app.ico 与 es\app_light.ico，只在换图标时需要跑一次。
+`run-tests.ps1` 的批量执行退出码判定不正确，会误报全部用例失败；单条手工编译可正常通过。
