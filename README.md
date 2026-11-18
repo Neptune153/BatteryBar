@@ -91,11 +91,13 @@ cmake --build --preset vs2022
 
 产物在 `build\vs2022\Release\BatteryBar.exe`。
 
-不使用 CMake 时的备选脚本 `tools\build-msvc.bat` 会自行定位 `vcvars64.bat`，合并语言文件后链接到
-`build\msvc\BatteryBar.exe`。MinGW 路径（`Makefile`）保留，需较新的 mingw-w64：旧版本缺少 `devpkey.h`，
-编译失败。
-
 构建脚本会自动收集 `src/` 下的所有 `.cpp`，新增驱动不需要改构建文件。
+
+单元测试清单在 `tests\tests.txt`，由 `CMakeLists.txt` 注册进 ctest：
+
+```bat
+ctest --test-dir build\ninja --output-on-failure
+```
 
 ## 目录结构
 

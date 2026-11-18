@@ -1,0 +1,27 @@
+# Unit tests, one "name|extra sources" entry per line. Empty extra means the test only
+# needs its own .cpp. Single source of truth: CMakeLists.txt registers each entry with
+# ctest (ctest --test-dir build/ninja), and tools are free to read it as well.
+astro_driver_test|src/core/drivers/astro.cpp
+steelseries_mouse_test|src/core/drivers/steelseries.cpp
+rapoo_driver_test|src/core/drivers/rapoo.cpp
+rapoo_protocol_test|
+ninjutso_driver_test|src/core/drivers/ninjutso.cpp
+ninjutso_cable_test|src/core/drivers/ninjutso.cpp
+cherry_driver_test|src/core/drivers/cherry.cpp
+machenike_driver_test|src/core/drivers/machenike.cpp
+niceboy_driver_test|src/core/drivers/niceboy.cpp
+alienware_driver_test|src/core/drivers/alienware.cpp
+arbiter_driver_test|src/core/drivers/arbiter.cpp src/core/drivers/lamzu.cpp
+dareu_driver_test|src/core/drivers/dareu.cpp
+semico_driver_test|src/core/drivers/semico.cpp
+steelseries_driver_test|src/core/drivers/steelseries.cpp
+mchose_modern_driver_test|src/core/drivers/mchose_modern.cpp
+vaxee_driver_test|src/core/drivers/vaxee.cpp
+finalmouse_driver_test|src/core/drivers/finalmouse.cpp
+keychron_driver_test|src/core/drivers/keychron.cpp
+hyperx_haste_driver_test|src/core/drivers/hyperx.cpp
+galaxy_buds_protocol_test|
+logitech_g435_0adf_test|
+xenta_protocol_test|src/core/drivers/protocol/xenta_protocol.cpp
+labels_test|src/text/labels.cpp
+brands_test|src/text/brands.cpp

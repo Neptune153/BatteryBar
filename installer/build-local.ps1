@@ -5,8 +5,12 @@ param([string]$Version = '1.0.0')
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$exe = Join-Path $root 'build\msvc\BatteryBar.exe'
-if (-not (Test-Path $exe)) { throw "还没有编译好的程序，先运行 temp\rebuild.bat" }
+$exe = $null
+foreach ($rel in @('build\ninja\BatteryBar.exe', 'build\vs2022\Release\BatteryBar.exe', 'build\cmake\Release\BatteryBar.exe')) {
+    $candidate = Join-Path $root $rel
+    if (Test-Path $candidate) { $exe = $candidate; break }
+}
+if (-not $exe) { throw "还没有编译好的程序，先运行 cmake --preset ninja 与 cmake --build --preset ninja" }
 
 $stage = Join-Path $root 'temp\stage'
 if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }

@@ -50,3 +50,32 @@ target_link_libraries(BatteryBar PRIVATE
     user32 gdi32 advapi32 ole32 oleaut32 comctl32
     hid setupapi cfgmgr32 runtimeobject ws2_32
     shell32 comdlg32 uuid windowsapp)
+
+# Unit tests. tests/tests.txt is the single source of the list: one "name|extra sources"
+# entry per line, empty extra means the test only needs its own .cpp. Run them with
+# `ctest --test-dir build/ninja` (or `--test-dir build/vs2022 -C Release`).
+option(BATTERYBAR_BUILD_TESTS "Build and register the unit tests" ON)
+if (BATTERYBAR_BUILD_TESTS)
+    enable_testing()
+    file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/tests/tests.txt" TEST_ENTRIES)
+    foreach (entry IN LISTS TEST_ENTRIES)
+        if (entry MATCHES "^\\s*#" OR entry STREQUAL "")
+            continue()
+        endif ()
+        string(REPLACE "|" ";" parts "${entry}")
+        list(GET parts 0 test_name)
+        list(GET parts 1 test_extra)
+        separate_arguments(test_extra_list UNIX_COMMAND "${test_extra}")
+        string(STRIP "${test_name}" test_name)
+        add_executable(${test_name} "${CMAKE_CURRENT_SOURCE_DIR}/tests/${test_name}.cpp" ${test_extra_list})
+        target_include_directories(${test_name} PRIVATE src)
+        target_compile_definitions(${test_name} PRIVATE UNICODE _UNICODE _WIN32_WINNT=0x0A00 WINVER=0x0A00)
+        if (MSVC)
+            target_compile_definitions(${test_name} PRIVATE NOMINMAX _CRT_SECURE_NO_WARNINGS)
+            target_compile_options(${test_name} PRIVATE /W3 /O1 /MT)
+        else ()
+            target_compile_options(${test_name} PRIVATE -Os -Wall -Wno-missing-field-initializers)
+        endif ()
+        add_test(NAME ${test_name} COMMAND ${test_name} WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+    endforeach ()
+endif ()

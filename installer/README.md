@@ -12,7 +12,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File installer\build-local.ps1 -V
 
 | 包内文件 | 说明 |
 | --- | --- |
-| `BatteryBar.exe` | 主程序，取自 `build\msvc\` 或 `build\cmake\Release\` |
+| `BatteryBar.exe` | 主程序，取自 `build\ninja\`、`build\vs2022\Release\` 或 `build\cmake\Release\` |
 | `headsetcontrol.exe` | 可选，额外的耳机支持，取自 `third_party\` 或既有安装目录 |
 | `install.bat` / `install.ps1` | 安装 |
 | `uninstall.bat` / `uninstall.ps1` | 卸载 |
