@@ -36,7 +36,7 @@ CloseApplications=no
 Name: "autostart"; Description: "Start BatteryBar when I sign in to Windows"
 
 [Files]
-Source: "{#Root}\BatteryBar.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#Root}\build\BatteryBar.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Root}\third_party\headsetcontrol\headsetcontrol.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Root}\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 Source: "{#Root}\installer\THIRD_PARTY_NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
@@ -46,7 +46,6 @@ Name: "{autoprograms}\BatteryBar"; Filename: "{app}\BatteryBar.exe"
 
 [Run]
 Filename: "{app}\BatteryBar.exe"; Description: "Start BatteryBar now"; Flags: nowait postinstall skipifsilent
-Filename: "https://ko-fi.com/krisgfx"; Description: "Enjoying BatteryBar? Support it on Ko-fi"; Flags: shellexec postinstall unchecked skipifsilent nowait runasoriginaluser
 
 [UninstallRun]
 Filename: "{app}\BatteryBar.exe"; Parameters: "--quit"; Flags: runhidden waituntilterminated; RunOnceId: "QuitApp"

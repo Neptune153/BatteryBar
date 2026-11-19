@@ -1,5 +1,5 @@
 ﻿# Builds dist\BatteryBar-Setup-<version>.exe and dist\BatteryBar-<version>-portable.zip.
-# Needs: BatteryBar.exe already built (make / build.bat) and Inno Setup 6 or 7 installed.
+# Needs: build\BatteryBar.exe already built (build.bat / make) and Inno Setup 6 or 7 installed.
 param([string]$Version = "1.0.0")
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
@@ -20,14 +20,26 @@ if ((Get-FileHash $hscExe -Algorithm SHA256).Hash -ne $hscSha256) {
     throw "HeadsetControl checksum mismatch - refusing to bundle it."
 }
 
-if (-not (Test-Path (Join-Path $root "BatteryBar.exe"))) { throw "Build BatteryBar.exe first (make or build.bat)." }
+$exe = Join-Path $root "build\BatteryBar.exe"
+if (-not (Test-Path $exe)) { throw "Build build\BatteryBar.exe first (build.bat or make)." }
 
+# Inno Setup: Program Files first, then any "Inno Setup *" folder on any drive.
 $iscc = foreach ($v in 7, 6) {
     foreach ($base in ${env:ProgramFiles(x86)}, $env:ProgramFiles, "$env:LOCALAPPDATA\Programs") { "$base\Inno Setup $v\ISCC.exe" }
 }
 $iscc = $iscc | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $iscc) {
+    foreach ($drive in (Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Root -match '^[A-Za-z]:\\$' })) {
+        foreach ($dir in (Get-ChildItem $drive.Root -Directory -Filter 'Inno Setup*' -ErrorAction SilentlyContinue)) {
+            $candidate = Join-Path $dir.FullName 'ISCC.exe'
+            if (Test-Path $candidate) { $iscc = $candidate; break }
+        }
+        if ($iscc) { break }
+    }
+}
 if (-not $iscc) { $iscc = (Get-Command ISCC.exe -ErrorAction SilentlyContinue).Source }
 if (-not $iscc) { throw "Inno Setup not found (https://jrsoftware.org/isdl.php)." }
+Write-Host "ISCC: $iscc"
 & $iscc "/DAppVersion=$Version" (Join-Path $PSScriptRoot "BatteryBar.iss")
 if ($LASTEXITCODE -ne 0) { throw "ISCC failed." }
 
@@ -35,7 +47,9 @@ if ($LASTEXITCODE -ne 0) { throw "ISCC failed." }
 $stage = Join-Path $root "build\portable"
 Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $stage | Out-Null
-Copy-Item BatteryBar.exe, $hscExe, installer\THIRD_PARTY_NOTICES.txt $stage
+New-Item -ItemType Directory -Force (Join-Path $root "dist") | Out-Null
+Copy-Item $exe (Join-Path $stage "BatteryBar.exe")
+Copy-Item $hscExe, installer\THIRD_PARTY_NOTICES.txt $stage
 Copy-Item LICENSE (Join-Path $stage "LICENSE.txt")
 Compress-Archive -Path "$stage\*" -DestinationPath "dist\BatteryBar-$Version-portable.zip" -Force
 Write-Host "Done: dist\BatteryBar-Setup-$Version.exe and dist\BatteryBar-$Version-portable.zip"
