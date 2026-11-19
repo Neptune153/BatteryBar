@@ -38,7 +38,7 @@
    }
    ```
 
-4. 在 `src/core/drivers/drivers.h` 中声明该函数，并在 `src/core/devices.cpp` 的 `PollAllDevices()` 中调用，位置放在通用兜底驱动之前。`CMakeLists.txt` 会自动纳入新增的源文件。
+4. 在 `src/core/drivers/drivers.h` 中声明该函数，并在 `src/core/devices.cpp` 的 `PollAllDevices()` 中调用，位置放在通用兜底驱动之前。构建脚本会递归收集 `src` 下的所有 `.cpp`，新增驱动不需要改构建文件。
 5. 更新 `README.md` 中的设备表。
 
 ### 驱动编写规则

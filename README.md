@@ -5,7 +5,7 @@
 ![任务栏上的 BatteryBar](docs/img/screenshot.png)
 
 BatteryBar 是 [Wireless Battery](https://github.com/krisgfx9/Wireless-Device-Battery-Monitor) 的分支，
-相对上游的差异：仅保留简体中文，移除联网上报与 Xbox 支持，重新划分目录，构建入口改为 CMake。
+相对上游的差异：仅保留简体中文，移除联网上报与 Xbox 支持，重新划分目录，构建脚本适配新的目录结构。
 
 ## 功能
 
@@ -65,47 +65,38 @@ BatteryBar.exe --quit      让正在运行的实例退出
 
 ## 从源码构建
 
-需要 **Visual Studio 2022**（含 C++ 桌面开发和 Windows SDK 10）与 **CMake 3.25** 及以上；两者随 Visual
-Studio 安装程序装好即可，不需要额外组件。
+需要 **MSYS2 的 mingw-w64 工具链**（`g++`、`windres`、`make`），在 MSYS2 终端里装一次：
 
-在 VS Code 中打开仓库并安装 CMake Tools 扩展，选择 MSVC 的 kit（如 `Visual Studio Community 2022 -
-amd64`），CMake 会按 `CMakePresets.json` 的默认预设配置到 `build/ninja`。构建与调试可直接在 VS Code 的
-CMake 侧栏完成，调试配置见 `.vscode/launch.json`。
-
-命令行构建：
-
-```bat
-cmake --preset ninja
-cmake --build --preset ninja
+```bash
+pacman -S --needed mingw-w64-x86_64-gcc make
 ```
 
-产物在 `build\ninja\BatteryBar.exe`，增量构建通常在一两秒内完成。`ninja` 预设要求当前终端已加载 MSVC
-环境（VS Code 的 CMake Tools 会自动加载；单独开终端时用「x64 Native Tools Command Prompt for VS 2022」）。
+构建入口是仓库根目录的两个脚本，任选其一：
 
-不便处理环境变量时可改用较慢的生成器：
+- `build.bat`：在 `cmd` 里运行，逐文件编译并按时间戳跳过已是最新的文件，删掉 `build\obj` 可强制全量重编；
+- `make`：在 MSYS2 的 MINGW64 shell 里运行，规则见 `Makefile`。
 
-```bat
-cmake --preset vs2022
-cmake --build --preset vs2022
-```
+两者都把程序生成到 `build\BatteryBar.exe`，中间文件（`obj\`、`app_res.o`、`languages.txt`）也在 `build\`。构建脚本递归收集 `src/` 下的所有
+`.cpp`，新增驱动不需要改构建文件。
 
-产物在 `build\vs2022\Release\BatteryBar.exe`。
+单元测试清单在 `tests\tests.txt`：
 
-构建脚本会自动收集 `src/` 下的所有 `.cpp`，新增驱动不需要改构建文件。
-
-单元测试清单在 `tests\tests.txt`，由 `CMakeLists.txt` 注册进 ctest：
-
-```bat
-ctest --test-dir build\ninja --output-on-failure
+```bash
+make test
 ```
 
 ## 目录结构
 
 ```
 src/
-  main.cpp              入口：消息循环、托盘、菜单、聚合显示
+  main.cpp              入口：全局状态、窗口过程（WndProc）、wWinMain
   app/
+    app_internal.h      模块间共享的全局变量与内部原型
     settings.*          注册表读写（含旧名字的设置迁移）
+    tray.*              托盘图标、设备条目、聚合显示
+    menu.*              右键菜单与命令分发
+    worker.*            后台轮询线程与刷新节流
+    cli.*               命令行（--list / --dump）
     widget/
       widget.cpp        任务栏窗口的创建、定位、交互
       paint.cpp         纯绘制：字体、遮罩、圆角底板、布局
@@ -121,11 +112,13 @@ src/
     brands.*            品牌配色
 res/                    图标、清单、资源脚本
 lang/                   UTF-8 翻译文件（`English = 中文`）
-tools/                  构建、测试与图标生成脚本
+tools/                  图标生成脚本
 tests/                  驱动单元测试（模拟 HID 传输）
 docs/img/               截图
 docs/drivers/           驱动协议笔记
 installer/              安装包脚本（Inno 版 / 免 Inno 的本地版）
+build.bat               MinGW 构建脚本（cmd）
+Makefile                同一套构建的 make 版本
 ```
 
 ## 新增一个设备
