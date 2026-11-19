@@ -19,7 +19,7 @@ using namespace settings;
 namespace {
 
 enum MenuId : UINT {
-    ID_REFRESH = 100, ID_AUTOSTART, ID_HIDE_LAST_KNOWN, ID_EXIT, ID_MODE_WIDGET, ID_MODE_TRAY, ID_SUPPORT,
+    ID_REFRESH = 100, ID_AUTOSTART, ID_HIDE_LAST_KNOWN, ID_EXIT, ID_MODE_WIDGET, ID_MODE_TRAY,
     ID_BRAND_COLORS, ID_STACKED,
     ID_WIDGET_BG_FIRST = 130,  // "Background behind taskbar text": ID_WIDGET_BG_FIRST + opacity / 10
     ID_LANG_AUTO = 400, ID_LANG_ADD, ID_LANG_FIRST,  // "Language": ID_LANG_FIRST + 0..63
@@ -124,7 +124,6 @@ void ShowMenu() {
     }
     AppendMenuW(m, MF_STRING, ID_REFRESH, T(L"Refresh now"));
     AppendMenuW(m, MF_STRING | (AutostartEnabled() ? MF_CHECKED : 0), ID_AUTOSTART, T(L"Start with Windows"));
-    AppendMenuW(m, MF_STRING, ID_SUPPORT, T(L"Support the project..."));
     AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(m, MF_STRING, ID_EXIT, T(L"Exit"));
     POINT pt;
@@ -153,7 +152,6 @@ void HandleCommand(UINT id) {
         case ID_STACKED: SetStacked(!g_stacked); break;
         case ID_MODE_WIDGET: SetMode(true); break;
         case ID_MODE_TRAY: SetMode(false); break;
-        case ID_SUPPORT: ShellExecuteW(nullptr, L"open", L"https://github.com/sponsors/krisgfx9", nullptr, nullptr, SW_SHOWNORMAL); break;
         case ID_EXIT: DestroyWindow(g_hwnd); break;
         default:
             if (id >= ID_WIDGET_BG_FIRST && id <= ID_WIDGET_BG_FIRST + 10) {

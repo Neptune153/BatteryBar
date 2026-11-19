@@ -40,7 +40,6 @@ Add your own language... = 添加你自己的语言...
 Language = 语言
 Refresh now = 立即刷新
 Start with Windows = 开机启动
-Support the project... = 支持本项目...
 Exit = 退出
 Device = 设备
 Type = 类型

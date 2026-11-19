@@ -45,7 +45,6 @@ Add your own language... =
 Language = 
 Refresh now = 
 Start with Windows = 
-Support the project... = 
 Exit = 
 Device = 
 Type = 
