@@ -204,8 +204,10 @@ std::vector<Piece> Layout(int barW, int barH, int& width, int& height) {
         if (!it.label.empty()) {  // tiny caption in the bottom-right corner of the icon
             Piece c{ RenderMask(it.label, caption, LightTheme()), fg, a, 0 };
             c.anchor = (int)glyph;
-            c.bx = out[glyph].m.w - c.m.w + Px(3);
-            c.by = out[glyph].m.h - c.m.h + Px(3);
+            // Keep the caption inside the glyph's box: the strip is only as tall as the taskbar, so
+            // the old +3px overhang let descenders fall below the layered window and get clipped.
+            c.bx = std::max(0, out[glyph].m.w - c.m.w);
+            c.by = std::max(0, out[glyph].m.h - c.m.h);
             out.push_back(c);
         }
     }
@@ -326,8 +328,8 @@ void Strip(HWND wnd, HWND taskbar, bool hover, SIZE& size) {
             }
             if (!fixed) x += p.m.w + p.gapAfter;
         } else {  // caption: one-pixel outline in the taskbar's colour so it reads over the icon's lines
-            xs[i] = xs[p.anchor] + p.bx;
-            ys[i] = ys[p.anchor] + p.by;
+            xs[i] = std::clamp(xs[p.anchor] + p.bx, 0, std::max(0, W - p.m.w));
+            ys[i] = std::clamp(ys[p.anchor] + p.by, 0, std::max(0, H - p.m.h));
             for (int oy = -1; oy <= 1; oy++)
                 for (int ox = -1; ox <= 1; ox++)
                     if (ox || oy) cv.Draw(p.m, xs[i] + ox, ys[i] + oy, barColor, outlineAlpha);
