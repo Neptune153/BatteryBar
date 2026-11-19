@@ -12,7 +12,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File installer\build-local.ps1 -V
 
 | 包内文件 | 说明 |
 | --- | --- |
-| `BatteryBar.exe` | 主程序，取自 `build\`（`build.bat` 或 `make` 的产物） |
+| `BatteryBar.exe` | 主程序，取自 `build\`（`make` 的产物） |
 | `headsetcontrol.exe` | 可选，额外的耳机支持，取自 `third_party\` 或既有安装目录 |
 | `install.bat` / `install.ps1` | 安装 |
 | `uninstall.bat` / `uninstall.ps1` | 卸载 |
@@ -27,9 +27,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File installer\build-local.ps1 -V
 powershell -NoProfile -ExecutionPolicy Bypass -File installer\build-inno.ps1 -Version 1.0.0
 ```
 
-依赖 Inno Setup 6（`ISCC.exe`）与网络访问：脚本下载 HeadsetControl 4.3.0 并校验 SHA-256。
-输出 `dist\BatteryBar-Setup-<版本>.exe` 与便携版 zip。安装脚本为 `BatteryBar.iss`，
-`Root` 与 `AppVersion` 由该脚本通过 `/D` 传入。
+依赖 Inno Setup 6 或 7（`ISCC.exe`）。HeadsetControl 优先取 `third_party\headsetcontrol\headsetcontrol.exe`，
+缺失时下载 4.3.0 并校验 SHA-256。
+输出 `dist\BatteryBar-Setup-<版本>.exe`。安装脚本为 `BatteryBar.iss`，`Root` 与 `AppVersion` 由该脚本通过`/D` 传入；
+默认目标目录是 `%LOCALAPPDATA%\Programs\BatteryBar`，安装向导显示目录页，可以改成其他位置。
 
 ## 约束
 

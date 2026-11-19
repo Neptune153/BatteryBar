@@ -1,5 +1,5 @@
-﻿# Builds dist\BatteryBar-Setup-<version>.exe and dist\BatteryBar-<version>-portable.zip.
-# Needs: build\BatteryBar.exe already built (build.bat / make) and Inno Setup 6 or 7 installed.
+﻿# Builds dist\BatteryBar-Setup-<version>.exe with Inno Setup.
+# Needs: build\BatteryBar.exe already built (make) and Inno Setup 6 or 7 installed.
 param([string]$Version = "1.0.0")
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
@@ -21,7 +21,7 @@ if ((Get-FileHash $hscExe -Algorithm SHA256).Hash -ne $hscSha256) {
 }
 
 $exe = Join-Path $root "build\BatteryBar.exe"
-if (-not (Test-Path $exe)) { throw "Build build\BatteryBar.exe first (build.bat or make)." }
+if (-not (Test-Path $exe)) { throw "Build build\BatteryBar.exe first (make)." }
 
 # Inno Setup: Program Files first, then any "Inno Setup *" folder on any drive.
 $iscc = foreach ($v in 7, 6) {
@@ -43,13 +43,4 @@ Write-Host "ISCC: $iscc"
 & $iscc "/DAppVersion=$Version" (Join-Path $PSScriptRoot "BatteryBar.iss")
 if ($LASTEXITCODE -ne 0) { throw "ISCC failed." }
 
-# Portable zip: same files, no installer.
-$stage = Join-Path $root "build\portable"
-Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Force $stage | Out-Null
-New-Item -ItemType Directory -Force (Join-Path $root "dist") | Out-Null
-Copy-Item $exe (Join-Path $stage "BatteryBar.exe")
-Copy-Item $hscExe, installer\THIRD_PARTY_NOTICES.txt $stage
-Copy-Item LICENSE (Join-Path $stage "LICENSE.txt")
-Compress-Archive -Path "$stage\*" -DestinationPath "dist\BatteryBar-$Version-portable.zip" -Force
-Write-Host "Done: dist\BatteryBar-Setup-$Version.exe and dist\BatteryBar-$Version-portable.zip"
+Write-Host "Done: dist\BatteryBar-Setup-$Version.exe"

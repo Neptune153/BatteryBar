@@ -29,7 +29,7 @@ constexpr UINT_PTR TIMER_BURST = 3;
 // publishes its battery, so look again a few times instead of waiting for the next minute-long poll.
 constexpr DWORD kPollBurstDelays[] = { 1500, 7000, 20000, 45000 };
 
-constexpr UINT PLACEHOLDER_ID = 1;
+constexpr UINT kMenuIconId = 1;  // the one tray icon: the way into the menu
 
 // ---- global state (defined in main.cpp) -------------------------------------------------------
 
@@ -38,8 +38,7 @@ extern HWND g_hwnd;
 extern HANDLE g_refreshEvt, g_stopEvt, g_worker;
 extern UINT g_taskbarCreatedMsg;
 extern bool g_lightTaskbar;
-extern bool g_wantWidget;      // user's choice: taskbar widget (default) or tray icons
-extern bool g_useWidget;       // what is actually shown right now
+extern bool g_useWidget;       // the taskbar widget is alive right now
 extern bool g_hideLastKnown;   // hide (last known) / asleep devices from taskbar and tray
 extern std::wstring g_widgetMonitor;  // which taskbars show the widget: "all", "main" or one monitor id
 extern int g_widgetBackground;  // opacity (0-100 %) of the plate behind the taskbar text, 0 = none
@@ -50,6 +49,5 @@ extern bool g_widgetFailNotified;     // that hint is shown once per run
 extern bool g_stacked;      // icon above the percentage (menu option)
 extern bool g_brandColors;  // off by default; known brands get their color (Razer green, Logitech blue, ...)
 extern std::map<std::wstring, TrayEntry> g_entries;
-extern bool g_placeholder;
-extern HICON g_placeholderIcon;
+extern bool g_trayIconAdded;
 extern bool g_demo;  // `--demo`: sample devices instead of real ones (see worker.cpp)

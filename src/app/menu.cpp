@@ -19,7 +19,7 @@ using namespace settings;
 namespace {
 
 enum MenuId : UINT {
-    ID_REFRESH = 100, ID_AUTOSTART, ID_HIDE_LAST_KNOWN, ID_EXIT, ID_MODE_WIDGET, ID_MODE_TRAY,
+    ID_REFRESH = 100, ID_AUTOSTART, ID_HIDE_LAST_KNOWN, ID_EXIT,
     ID_BRAND_COLORS, ID_STACKED,
     ID_WIDGET_BG_FIRST = 130,  // "Background behind taskbar text": ID_WIDGET_BG_FIRST + opacity / 10
     ID_LANG_AUTO = 400, ID_LANG_ADD, ID_LANG_FIRST,  // "Language": ID_LANG_FIRST + 0..63
@@ -53,40 +53,35 @@ void ShowMenu() {
         bool canLeft = pos != shown.end() && pos != shown.begin();
         bool canRight = pos != shown.end() && pos + 1 != shown.end();
         HMENU sub = CreatePopupMenu();
-        AppendMenuW(sub, MF_STRING | (IsHidden(k) ? 0 : MF_CHECKED), base + DEV_TOGGLE,
-                    g_wantWidget ? T(L"Show on the taskbar") : T(L"Show in the tray"));
+        AppendMenuW(sub, MF_STRING | (IsHidden(k) ? 0 : MF_CHECKED), base + DEV_TOGGLE, T(L"Show on the taskbar"));
         AppendMenuW(sub, MF_SEPARATOR, 0, nullptr);
-        AppendMenuW(sub, MF_STRING | (canLeft ? 0 : MF_GRAYED), base + DEV_LEFT, g_wantWidget ? T(L"Move left") : T(L"Move up"));
-        AppendMenuW(sub, MF_STRING | (canRight ? 0 : MF_GRAYED), base + DEV_RIGHT, g_wantWidget ? T(L"Move right") : T(L"Move down"));
+        AppendMenuW(sub, MF_STRING | (canLeft ? 0 : MF_GRAYED), base + DEV_LEFT, T(L"Move left"));
+        AppendMenuW(sub, MF_STRING | (canRight ? 0 : MF_GRAYED), base + DEV_RIGHT, T(L"Move right"));
         std::wstring line = e->st.name + L":  " + StatusText(*e) + L"   [" + T(e->st.via) + L"]";
         AppendMenuW(m, MF_POPUP | (IsHidden(k) ? 0 : MF_CHECKED), (UINT_PTR)sub, line.c_str());
         keys.push_back(k);
     }
     AppendMenuW(m, MF_STRING | (g_hideLastKnown ? MF_CHECKED : 0), ID_HIDE_LAST_KNOWN, T(L"Hide last known / asleep devices"));
     AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(m, MF_STRING | (g_wantWidget ? MF_CHECKED : 0), ID_MODE_WIDGET, T(L"Show on the taskbar (icon + percentage)"));
-    AppendMenuW(m, MF_STRING | (!g_wantWidget ? MF_CHECKED : 0), ID_MODE_TRAY, T(L"Show as tray icons"));
-    CheckMenuRadioItem(m, ID_MODE_WIDGET, ID_MODE_TRAY, g_wantWidget ? ID_MODE_WIDGET : ID_MODE_TRAY, MF_BYCOMMAND);
     // How opaque the plate behind the text is; "None" keeps the old off state.
     {
         HMENU sub = CreatePopupMenu();
-        UINT f = MF_STRING | (g_wantWidget ? 0 : MF_GRAYED);
+        UINT f = MF_STRING;
         for (int pct = 0; pct <= 100; pct += 10) {
             std::wstring label = pct == 0 ? T(L"None") : std::to_wstring(pct) + L"%";
             AppendMenuW(sub, f, ID_WIDGET_BG_FIRST + pct / 10, label.c_str());
         }
         CheckMenuRadioItem(sub, ID_WIDGET_BG_FIRST, ID_WIDGET_BG_FIRST + 10, ID_WIDGET_BG_FIRST + g_widgetBackground / 10,
                            MF_BYCOMMAND);
-        AppendMenuW(m, MF_POPUP | (g_wantWidget ? 0 : MF_GRAYED), (UINT_PTR)sub,
-                    T(L"Background behind taskbar text (for transparent taskbars)"));
+        AppendMenuW(m, MF_POPUP, (UINT_PTR)sub, T(L"Background behind taskbar text (for transparent taskbars)"));
     }
-    AppendMenuW(m, MF_STRING | (g_stacked ? MF_CHECKED : 0) | (g_wantWidget ? 0 : MF_GRAYED), ID_STACKED, T(L"Icons above percentages (narrower)"));
+    AppendMenuW(m, MF_STRING | (g_stacked ? MF_CHECKED : 0), ID_STACKED, T(L"Icons above percentages (narrower)"));
     // With more than one monitor: choose which taskbars show the widget (all, main only, or one monitor).
     auto monitors = widget::OtherMonitors();
     if (monitors.size() > 31) monitors.resize(31);
     if (!monitors.empty()) {
         HMENU sub = CreatePopupMenu();
-        UINT f = MF_STRING | (g_wantWidget ? 0 : MF_GRAYED);
+        UINT f = MF_STRING;
         AppendMenuW(sub, f, ID_MONITOR_ALL, T(L"All monitors"));
         AppendMenuW(sub, f, ID_MONITOR_MAIN, T(L"Main monitor only"));
         UINT checked = g_widgetMonitor == L"main" ? ID_MONITOR_MAIN : ID_MONITOR_ALL;
@@ -100,7 +95,7 @@ void ShowMenu() {
             checked = ID_MONITOR_FIRST + 31;
         }
         CheckMenuRadioItem(sub, ID_MONITOR_ALL, ID_MONITOR_FIRST + 31, checked, MF_BYCOMMAND);
-        AppendMenuW(m, MF_POPUP | (g_wantWidget ? 0 : MF_GRAYED), (UINT_PTR)sub, T(L"Show the widget on"));
+        AppendMenuW(m, MF_POPUP, (UINT_PTR)sub, T(L"Show the widget on"));
     }
     AppendMenuW(m, MF_STRING | (g_brandColors ? MF_CHECKED : 0), ID_BRAND_COLORS, T(L"Brand colors (Razer green, Logitech blue, ...)"));
     AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
@@ -150,8 +145,6 @@ void HandleCommand(UINT id) {
         case ID_MONITOR_MAIN: SetWidgetMonitor(L"main"); break;
         case ID_BRAND_COLORS: SetBrandColors(!g_brandColors); break;
         case ID_STACKED: SetStacked(!g_stacked); break;
-        case ID_MODE_WIDGET: SetMode(true); break;
-        case ID_MODE_TRAY: SetMode(false); break;
         case ID_EXIT: DestroyWindow(g_hwnd); break;
         default:
             if (id >= ID_WIDGET_BG_FIRST && id <= ID_WIDGET_BG_FIRST + 10) {

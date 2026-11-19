@@ -112,8 +112,6 @@ void SaveIntSetting(const wchar_t* name, int value) {
     RegSetKeyValueW(HKEY_CURRENT_USER, kSettingsKey, name, REG_DWORD, &v, sizeof(v));
 }
 
-bool LoadWidgetMode() { return LoadBoolSetting(L"TaskbarWidget", true); }
-void SaveWidgetMode(bool on) { SaveBoolSetting(L"TaskbarWidget", on); }
 
 bool LoadHideLastKnown() { return LoadBoolSetting(L"HideLastKnownDevices", false); }
 void SaveHideLastKnown(bool on) { SaveBoolSetting(L"HideLastKnownDevices", on); }

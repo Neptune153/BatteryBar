@@ -10,7 +10,7 @@ BatteryBar 是 [Wireless Battery](https://github.com/krisgfx9/Wireless-Device-Ba
 ## 功能
 
 - 任务栏小组件：设备图标与百分比，紧贴托盘区域，跟随任务栏明暗主题
-- 也可仅使用托盘图标
+- 托盘图标仅作为菜单入口，设备电量只在任务栏小组件中显示
 - 圆角半透明底板，不透明度可配置（0–100%）
 - 品牌配色（Razer 绿、Logitech 蓝等），可关闭改用单色
 - 横向布局，或"图标在上、百分比在下"的紧凑布局
@@ -44,14 +44,14 @@ BatteryBar 是 [Wireless Battery](https://github.com/krisgfx9/Wireless-Device-Ba
 - `10%` … `100%`：底板不透明度，默认 `60%`
 
 约束：小组件必须由与任务栏相同完整性级别的进程创建。若程序由低完整性级别的父进程
-（部分启动器、脚本宿主）启动，系统将拒绝创建该子窗口，此时程序提示一次并退回托盘图标。
+（部分启动器、脚本宿主）启动，系统会拒绝创建该子窗口与托盘图标，此时程序提示一次并退出。
 从开始菜单或资源管理器中直接启动即可满足条件。
 
 ## 安装
 
-- **安装包**：`dist\BatteryBar-Setup-<版本>.zip`（生成方法见 `installer/README.md`），解压后运行 `install.bat`：安装到
-  `%LOCALAPPDATA%\Programs\BatteryBar`，创建开始菜单快捷方式，登记到「应用和功能」；卸载运行 `uninstall.bat`。
-- **便携版**：`BatteryBar.exe` 可单文件运行；蓝牙耳机额外需要 `headsetcontrol.exe`。
+- **安装程序**：`dist\BatteryBar-Setup-<版本>.exe`（生成方法见 `installer/README.md`）。安装向导可自选目标目录，
+  默认 `%LOCALAPPDATA%\Programs\BatteryBar`；同时创建开始菜单快捷方式、登记到「应用和功能」、提供卸载项。
+- **免安装**：`build\BatteryBar.exe` 可直接运行；蓝牙耳机额外需要同目录的 `headsetcontrol.exe`。
 - **开机自启**：菜单项「开机启动」。
 
 ## 命令行
@@ -71,15 +71,26 @@ BatteryBar.exe --quit      让正在运行的实例退出
 pacman -S --needed mingw-w64-x86_64-gcc make
 ```
 
-构建入口是仓库根目录的两个脚本，任选其一：
+构建入口是仓库根目录的 `Makefile`，在 **MSYS2 MINGW64** 终端里执行（开始菜单里的 `MSYS2 MINGW64`，
+`g++`、`windres`、`make` 都在它的 PATH 里）：
 
-- `build.bat`：在 `cmd` 里运行，逐文件编译并按时间戳跳过已是最新的文件，删掉 `build\obj` 可强制全量重编；
-- `make`：在 MSYS2 的 MINGW64 shell 里运行，规则见 `Makefile`。
+```bash
+cd /d/a_downloads/Repositories/BatteryBar
+make          # 增量编译，产物 build/BatteryBar.exe
+make clean    # 删掉 build/
+```
 
-两者都把程序生成到 `build\BatteryBar.exe`，中间文件（`obj\`、`app_res.o`、`languages.txt`）也在 `build\`。构建脚本递归收集 `src/` 下的所有
-`.cpp`，新增驱动不需要改构建文件。
+规则是逐个 `.cpp` 编译成 `build/` 下同名 `.o`，再链接成 `build/BatteryBar.exe`；按时间戳跳过已是最新的文件，
+改了头文件会重编所有依赖它的源文件。`res/app.rc` 由 `windres` 编成 `build/app_res.o`，`lang/*.txt` 合并成
+`build/languages.txt` 后作为资源嵌入。`src/` 下的源文件是递归收集的，新增驱动不需要改构建文件。
 
-单元测试清单在 `tests\tests.txt`：
+不在 MSYS2 终端里时，可以在任意 PowerShell 里这样调用：
+
+```powershell
+D:\MSYS2\usr\bin\bash.exe -lc "cd /d/a_downloads/Repositories/BatteryBar && make"
+```
+
+单元测试清单在 `tests/tests.txt`：
 
 ```bash
 make test
@@ -93,7 +104,7 @@ src/
   app/
     app_internal.h      模块间共享的全局变量与内部原型
     settings.*          注册表读写（含旧名字的设置迁移）
-    tray.*              托盘图标、设备条目、聚合显示
+    tray.*              托盘图标与工具提示、设备条目、widget 数据
     menu.*              右键菜单与命令分发
     worker.*            后台轮询线程与刷新节流
     cli.*               命令行（--list / --dump）
@@ -117,7 +128,7 @@ tests/                  驱动单元测试（模拟 HID 传输）
 docs/img/               截图
 docs/drivers/           驱动协议笔记
 installer/              安装包脚本（Inno 版 / 免 Inno 的本地版）
-build.bat               MinGW 构建脚本（cmd）
+Makefile                构建规则（MSYS2 MINGW64 里 make）
 Makefile                同一套构建的 make 版本
 ```
 
@@ -137,5 +148,3 @@ Makefile                同一套构建的 make 版本
 ## 许可
 
 GPL-3.0，见 `LICENSE`。
-
-上游项目由 [krisgfx9](https://github.com/krisgfx9) 维护，图标由 [nik-txt](https://github.com/nik-txt) 设计。

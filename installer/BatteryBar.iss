@@ -9,14 +9,14 @@
 #define Root ".."
 
 [Setup]
-AppId={{7E0B5C2A-3F4D-4C8E-9B61-2D5A8F1C4E93}
+AppId={{B7A0E9C3-5C2F-4C86-9E24-6F1D2B3A4C51}
 AppName=BatteryBar
 AppVersion={#AppVersion}
 AppVerName=BatteryBar {#AppVersion}
 AppPublisher=BatteryBar contributors
 DefaultDirName={autopf}\BatteryBar
 DisableProgramGroupPage=yes
-DisableDirPage=auto
+DisableDirPage=no
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 ArchitecturesAllowed=x64compatible

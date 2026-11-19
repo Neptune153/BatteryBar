@@ -81,7 +81,7 @@ HyperX Cloud II Wireless [2.4 GHz receiver]  14%, 3661 mV
 ```
 
 The reading matched the percentage displayed by the official Redragon software at the same
-moment. The MinGW `build.bat` includes the new source file; the `Makefile` discovers it through
+moment. The `Makefile` discovers the new source file through
 its wildcard.
 
 ## Protocol sources

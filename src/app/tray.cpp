@@ -32,120 +32,19 @@ bool IsEntryHidden(const TrayEntry& e) {
     return IsHidden(e.st.key) || (g_hideLastKnown && (e.st.asleep || (e.st.percent < 0 && e.lastPct >= 0)));
 }
 
-// ---- icon rendering ---------------------------------------------------------------------------
-// Draws the percentage as large digits with a small level bar underneath. GDI text is rendered
-// white-on-black into a scratch bitmap and its brightness is used as the alpha channel, which
-// gives smooth edges on the transparent icon.
+// ---- tray icon --------------------------------------------------------------------------------
+// The notification area holds a single icon: the app icon, and the menu behind it. Device levels
+// live in the taskbar widget, so the tray no longer draws one icon per device.
 
-struct Rgb { BYTE r, g, b; };
-
-HICON RenderIcon(const std::wstring& text, int barPct, Rgb textColor, Rgb barColor, bool dim) {
-    HWND taskbar = FindWindowW(L"Shell_TrayWnd", nullptr);
-    UINT dpi = taskbar ? GetDpiForWindow(taskbar) : 0;
-    const int S = GetSystemMetricsForDpi(SM_CXSMICON, dpi ? dpi : GetDpiForSystem());
-    const int barH = std::max(2, S / 8);
-    const int textH = S - barH - 1;
-
-    HDC dc = CreateCompatibleDC(nullptr);
-    BITMAPINFO bi{};
-    bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bi.bmiHeader.biPlanes = 1;
-    bi.bmiHeader.biBitCount = 32;
-    bi.bmiHeader.biCompression = BI_RGB;
-
-    // scratch bitmap for the glyphs
-    const int W = S * 3, H = S * 2;
-    bi.bmiHeader.biWidth = W;
-    bi.bmiHeader.biHeight = -H;
-    void* sbits = nullptr;
-    HBITMAP scratch = CreateDIBSection(dc, &bi, DIB_RGB_COLORS, &sbits, nullptr, 0);
-    HGDIOBJ oldBmp = SelectObject(dc, scratch);
-    SetBkMode(dc, TRANSPARENT);
-    SetTextColor(dc, RGB(255, 255, 255));
-    auto* sp = static_cast<DWORD*>(sbits);
-
-    int bx0 = 0, by0 = 0, bx1 = -1, by1 = -1;
-    for (int fh = textH * 2; fh >= 6; fh--) {
-        HFONT f = CreateFontW(-fh, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-                              ANTIALIASED_QUALITY, DEFAULT_PITCH, L"Segoe UI");
-        HGDIOBJ oldF = SelectObject(dc, f);
-        SetTextCharacterExtra(dc, text.size() >= 3 ? -1 : 0);
-        memset(sbits, 0, (size_t)W * H * 4);
-        TextOutW(dc, 2, 0, text.c_str(), (int)text.size());
-        GdiFlush();
-        SelectObject(dc, oldF);
-        DeleteObject(f);
-        bx0 = W; by0 = H; bx1 = -1; by1 = -1;
-        for (int y = 0; y < H; y++)
-            for (int x = 0; x < W; x++)
-                if (sp[y * W + x] & 0xFF) { bx0 = std::min(bx0, x); bx1 = std::max(bx1, x); by0 = std::min(by0, y); by1 = std::max(by1, y); }
-        if (bx1 < 0) break;
-        if (bx1 - bx0 + 1 <= S && by1 - by0 + 1 <= textH) break;
-    }
-
-    // final icon bitmap
-    bi.bmiHeader.biWidth = S;
-    bi.bmiHeader.biHeight = -S;
-    void* ibits = nullptr;
-    HBITMAP color = CreateDIBSection(dc, &bi, DIB_RGB_COLORS, &ibits, nullptr, 0);
-    auto* ip = static_cast<DWORD*>(ibits);
-    memset(ip, 0, (size_t)S * S * 4);
-    const int alphaScale = dim ? 140 : 255;
-    auto put = [&](int x, int y, Rgb c, int a) {
-        if (x < 0 || y < 0 || x >= S || y >= S || a <= 0) return;
-        a = a * alphaScale / 255;
-        ip[y * S + x] = ((DWORD)a << 24) | ((DWORD)c.r << 16) | ((DWORD)c.g << 8) | c.b;  // straight alpha
-    };
-    if (bx1 >= 0) {
-        int gw = bx1 - bx0 + 1, gh = by1 - by0 + 1;
-        int ox = (S - gw) / 2, oy = (textH - gh) / 2;
-        for (int y = 0; y < gh; y++)
-            for (int x = 0; x < gw; x++)
-                put(ox + x, oy + y, textColor, sp[(by0 + y) * W + (bx0 + x)] & 0xFF);
-    }
-    // level bar: faint track + filled part
-    int fill = barPct < 0 ? 0 : std::max(barPct > 0 ? 1 : 0, (barPct * S + 50) / 100);
-    for (int y = S - barH; y < S; y++)
-        for (int x = 0; x < S; x++) {
-            if (x < fill) put(x, y, barColor, 255);
-            else put(x, y, g_lightTaskbar ? Rgb{ 0, 0, 0 } : Rgb{ 255, 255, 255 }, 70);
-        }
-
-    SelectObject(dc, oldBmp);
-    DeleteObject(scratch);
-    DeleteDC(dc);
-
-    HBITMAP mask = CreateBitmap(S, S, 1, 1, nullptr);
-    {
-        HDC mdc = CreateCompatibleDC(nullptr);
-        HGDIOBJ o = SelectObject(mdc, mask);
-        PatBlt(mdc, 0, 0, S, S, BLACKNESS);
-        SelectObject(mdc, o);
-        DeleteDC(mdc);
-    }
-    ICONINFO ii{ TRUE, 0, 0, mask, color };
-    HICON icon = CreateIconIndirect(&ii);
-    DeleteObject(mask);
-    DeleteObject(color);
-    return icon;
+HICON AppIcon() {
+    const int size = GetSystemMetrics(SM_CXSMICON);
+    HICON icon = static_cast<HICON>(
+        LoadImageW(g_inst, MAKEINTRESOURCEW(1), IMAGE_ICON, size, size, LR_DEFAULTCOLOR | LR_SHARED));
+    // This project does not define UNICODE, so IDI_APPLICATION expands to a narrow resource id.
+    return icon ? icon : LoadIconW(nullptr, reinterpret_cast<LPCWSTR>(IDI_APPLICATION));
 }
-
-Rgb Foreground() { return g_lightTaskbar ? Rgb{ 0, 0, 0 } : Rgb{ 255, 255, 255 }; }
 
 Accent AccentFor(const DeviceStatus& s) { return g_brandColors ? BrandOf(s) : Accent::None; }
-
-HICON IconFor(int pct, bool charging, bool dim, Accent accent) {
-    Rgb fg = Foreground();
-    BrandColor bc = AccentColor(accent, g_lightTaskbar);
-    Rgb bar = charging        ? Rgb{ 0, 170, 255 }
-            : pct <= LOW_BATTERY ? Rgb{ 232, 32, 48 }
-            : pct <= 30       ? Rgb{ 255, 150, 0 }
-            : accent != Accent::None ? Rgb{ bc.r, bc.g, bc.b }
-                              : Rgb{ 30, 190, 90 };
-    Rgb text = (!charging && pct >= 0 && pct <= LOW_BATTERY) ? Rgb{ 240, 50, 60 } : fg;
-    std::wstring t = pct < 0 ? L"?" : std::to_wstring(pct);
-    return RenderIcon(t, pct, text, bar, dim);
-}
 
 // ---- tray management --------------------------------------------------------------------------
 
@@ -177,35 +76,36 @@ bool SendTrayMessage(DWORD msg, UINT uid, HICON icon, const std::wstring& tip, c
     return ok != FALSE;
 }
 
-void ApplyEntry(TrayEntry& e) {
-    const auto& s = e.st;
-    bool visible = s.connected && !g_useWidget && !IsEntryHidden(e);
-    if (!visible) {
-        if (e.added) { RemoveTrayIcon(e.uid); e.added = false; }
-        return;
+// The tooltip of the tray icon: one line per device that the widget shows.
+std::wstring TrayTip() {
+    std::wstring tip = L"BatteryBar";
+    bool any = false;
+    for (TrayEntry* e : OrderedEntries(true)) {
+        tip += L"\n" + e->st.name + L": " + StatusText(*e);
+        any = true;
     }
-    int shown = s.percent >= 0 ? s.percent : e.lastPct;
-    bool dim = s.percent < 0;
-    Accent accent = AccentFor(s);
-    std::wstring sig = std::to_wstring(shown) + (s.charging ? L"c" : L"") + (dim ? L"d" : L"") + (g_lightTaskbar ? L"l" : L"k") +
-                       L"a" + std::to_wstring((int)accent);
-    if (sig != e.iconSig || !e.icon) {
-        if (e.icon) DestroyIcon(e.icon);
-        e.icon = IconFor(shown, s.charging, dim, accent);
-        e.iconSig = sig;
-    }
-    std::wstring tip = s.name + L"\n" + StatusText(e);
+    if (!any) tip += std::wstring(L"\n") + T(L"No devices with battery info found");
+    return tip;
+}
 
-    const wchar_t* infoTitle = nullptr;
-    std::wstring info;
-    if (s.charging || shown > LOW_BATTERY + 10) e.lowWarned = false;
-    if (!s.charging && s.percent >= 0 && s.percent <= LOW_BATTERY && !e.lowWarned) {
-        e.lowWarned = true;
-        infoTitle = T(L"Low battery");
-        info = TF(L"{name} is at {percent}%", { { L"name", s.name }, { L"percent", std::to_wstring(s.percent) } });
-    }
-    SendTrayMessage(e.added ? NIM_MODIFY : NIM_ADD, e.uid, e.icon, tip, infoTitle, info);
-    e.added = true;
+// The notification area holds one icon, the way into the menu: added on the first poll, then kept up
+// to date. Returns false while Windows refuses it (a lower-integrity process may not use the area).
+bool UpdateTrayIcon() {
+    std::wstring tip = TrayTip();
+    if (g_trayIconAdded) return SendTrayMessage(NIM_MODIFY, kMenuIconId, AppIcon(), tip);
+    if (!SendTrayMessage(NIM_ADD, kMenuIconId, AppIcon(), tip)) return false;
+    g_trayIconAdded = true;
+    return true;
+}
+
+// One balloon per device per run, shown on the tray icon.
+void MaybeWarnLowBattery(TrayEntry& e) {
+    const auto& s = e.st;
+    if (s.charging || s.percent < 0 || s.percent > LOW_BATTERY + 10) e.lowWarned = false;
+    if (s.charging || s.percent < 0 || s.percent > LOW_BATTERY || e.lowWarned || !g_trayIconAdded) return;
+    e.lowWarned = true;
+    SendTrayMessage(NIM_MODIFY, kMenuIconId, AppIcon(), TrayTip(), T(L"Low battery"),
+                    TF(L"{name} is at {percent}%", { { L"name", s.name }, { L"percent", std::to_wstring(s.percent) } }));
 }
 
 int KindOrder(DeviceKind k) {  // default order: headset first, then mouse, ...
@@ -251,44 +151,17 @@ void UpdateWidget() {
 
 // The widget is a child window of Explorer's taskbar, so Windows refuses to create it when this
 // process runs with a lower integrity level than the taskbar (a launcher that drops it to Low) or
-// while Explorer is down. The app then falls back to tray icons, which on Windows 11 land in the
-// hidden overflow area, so starting it looks like nothing happened. Say it once instead.
+// while Explorer is down. Nothing would show up at all then, so say why instead of staying silent.
 void NotifyWidgetFallback() {
     if (g_widgetFailNotified) return;
-    UINT uid = 0;
-    HICON icon = nullptr;
-    std::wstring tip = L"BatteryBar";
-    if (g_placeholder) {
-        uid = PLACEHOLDER_ID;
-        icon = g_placeholderIcon;
-    } else {
-        for (auto& [k, e] : g_entries) {
-            if (!e.added) continue;
-            uid = e.uid;
-            icon = e.icon;
-            tip = e.st.name + L"\n" + StatusText(e);
-            break;
-        }
-    }
-    if (!uid) return;  // nothing in the tray yet, ask again on the next tick
-    // Set before saying anything: the message box below runs its own message loop, in which the
-    // once-a-second timer keeps firing, and this must not stack up more copies of the hint.
+    // Set first: the message box runs its own message loop, in which the once-a-second timer keeps
+    // firing, and the hint must not stack up copies of itself.
     g_widgetFailNotified = true;
-    if (!icon) {
-        if (!g_placeholderIcon) g_placeholderIcon = RenderIcon(L"-", -1, Foreground(), Foreground(), true);
-        icon = g_placeholderIcon;
-    }
-    bool shown = SendTrayMessage(NIM_MODIFY, uid, icon, tip, T(L"Taskbar widget unavailable"),
-                          T(L"Could not put the widget on the taskbar, so the tray icons are used instead."));
-    if (!shown) {
-        // Windows refuses the notification area to a lower-integrity process too, and that is the
-        // usual reason the widget was rejected in the first place: say it where it cannot be missed.
-        std::wstring body = T(L"Could not put the widget on the taskbar, so the tray icons are used instead.");
-        body += L"\n\n";
-        body += T(L"Windows also refused the tray icon. This happens when the program was started by another program with lower permissions: close it and start it again from the Start menu, or by double-clicking the program in File Explorer.");
-        MessageBoxW(nullptr, body.c_str(), T(L"Taskbar widget unavailable"),
-                    MB_OK | MB_ICONWARNING | MB_TOPMOST | MB_SETFOREGROUND);
-    }
+    std::wstring body = T(L"Could not put the widget on the taskbar.");
+    body += L"\n\n";
+    body += T(L"This happens when the program was started by another program with lower permissions: close it, then start it again from the Start menu, or by double-clicking the program in File Explorer.");
+    MessageBoxW(nullptr, body.c_str(), T(L"Taskbar widget unavailable"),
+                MB_OK | MB_ICONWARNING | MB_TOPMOST | MB_SETFOREGROUND);
 }
 
 }  // namespace
@@ -322,22 +195,6 @@ void RemoveTrayIcon(UINT uid) {
     Shell_NotifyIconW(NIM_DELETE, &nid);
 }
 
-void UpdatePlaceholder() {
-    if (g_useWidget) {
-        if (g_placeholder) { RemoveTrayIcon(PLACEHOLDER_ID); g_placeholder = false; }
-        return;
-    }
-    bool any = false;
-    for (auto& [k, e] : g_entries) any |= e.added;
-    if (!any && !g_placeholder) {
-        if (!g_placeholderIcon) g_placeholderIcon = RenderIcon(L"-", -1, Foreground(), Foreground(), true);
-        SendTrayMessage(NIM_ADD, PLACEHOLDER_ID, g_placeholderIcon, std::wstring(L"BatteryBar\n") + T(L"No devices with battery info found"));
-        g_placeholder = true;
-    } else if (any && g_placeholder) {
-        RemoveTrayIcon(PLACEHOLDER_ID);
-        g_placeholder = false;
-    }
-}
 
 // Entries in left-to-right order: the user's order first, then the rest by type and name. Works the
 // same for every kind of device (receivers, Bluetooth, controllers, HeadsetControl) as it only uses
@@ -364,12 +221,11 @@ void OnResults(std::vector<DeviceStatus>& results) {
     std::map<std::wstring, bool> seen;
     for (auto& s : results) {
         auto& e = g_entries[s.key];
-        if (!e.uid) e.uid = StableId(s.key);
         e.st = s;
         if (s.percent >= 0) e.lastPct = s.percent;
         e.lastSeen = GetTickCount64();
         seen[s.key] = true;
-        ApplyEntry(e);
+        MaybeWarnLowBattery(e);
     }
     for (auto it = g_entries.begin(); it != g_entries.end();) {
         auto& e = it->second;
@@ -379,49 +235,37 @@ void OnResults(std::vector<DeviceStatus>& results) {
         if (inGrace) {
             e.st.percent = -1;
             e.st.asleep = true;
-            ApplyEntry(e);
         }
         if (!seen.count(it->first) && !inGrace) {
-            if (it->second.added) RemoveTrayIcon(it->second.uid);
-            if (it->second.icon) DestroyIcon(it->second.icon);
             it = g_entries.erase(it);
         } else {
             ++it;
         }
     }
-    UpdatePlaceholder();
+    UpdateTrayIcon();
     UpdateWidget();
 }
-
-// Makes the actual display match the chosen mode; falls back to tray icons if the taskbar
-// widget cannot be created (e.g. Explorer not ready yet). Called once a second.
+// Keeps the widget on the taskbar; called once a second. The tray icon stays: it is the way into the
+// menu, not a second display.
 void Reconcile() {
-    bool alive = g_wantWidget && widget::Alive();
-    if (g_wantWidget && !alive) alive = widget::Create(g_inst, g_hwnd, WM_WIDGET_CLICK, g_lightTaskbar);
-    if (!g_wantWidget) widget::Destroy();
+    bool alive = widget::Alive();
+    if (!alive) alive = widget::Create(g_inst, g_hwnd, WM_WIDGET_CLICK, g_lightTaskbar);
     // A few seconds of that is not Explorer starting up any more, it is this process not being
     // allowed in. Stop being silent about it (once per run).
-    if (g_wantWidget && !alive) {
-        if (++g_widgetFailTicks >= 10) NotifyWidgetFallback();
-    } else {
+    if (alive) {
         g_widgetFailTicks = 0;
+    } else if (++g_widgetFailTicks >= 10) {
+        NotifyWidgetFallback();
     }
-    bool changed = alive != g_useWidget;
-    g_useWidget = alive;
-    if (changed) {
-        for (auto& [k, e] : g_entries) ApplyEntry(e);
-        UpdatePlaceholder();
+    if (alive != g_useWidget) {
+        g_useWidget = alive;
+        UpdateTrayIcon();
         UpdateWidget();
-    } else if (g_useWidget) {
+    } else if (alive) {
         widget::Reposition();
     }
 }
 
-void SetMode(bool useWidget) {
-    g_wantWidget = useWidget;
-    SaveWidgetMode(useWidget);
-    Reconcile();
-}
 
 void SetWidgetBackground(int percent) {
     g_widgetBackground = percent < 0 ? 0 : (percent > 100 ? 100 : percent);
@@ -432,29 +276,19 @@ void SetWidgetBackground(int percent) {
 void SetHideLastKnown(bool on) {
     g_hideLastKnown = on;
     SaveHideLastKnown(on);
-    for (auto& [k, e] : g_entries) ApplyEntry(e);
-    UpdatePlaceholder();
+    UpdateTrayIcon();
     UpdateWidget();
 }
 
-void RebuildTrayIcons() {
-    g_placeholder = false;
-    for (auto& [k, e] : g_entries) { e.added = false; ApplyEntry(e); }
-    UpdatePlaceholder();
+void RebuildTrayIcons() {  // Explorer restarted: the icon has to be added again
+    g_trayIconAdded = false;
+    UpdateTrayIcon();
 }
 
 // Switches the UI language ("" = follow Windows) and redraws everything that shows text.
 void SetLanguage(const std::wstring& code);
 
-void RedrawAll() {
-    if (g_placeholderIcon) {
-        DestroyIcon(g_placeholderIcon);
-        g_placeholderIcon = nullptr;
-        if (g_placeholder) { RemoveTrayIcon(PLACEHOLDER_ID); g_placeholder = false; }
-    }
-    for (auto& [k, e] : g_entries) { e.iconSig.clear(); ApplyEntry(e); }
-    UpdatePlaceholder();
-}
+void RedrawAll() { UpdateTrayIcon(); }  // the tooltip carries the UI language and the device names
 
 void SetLanguage(const std::wstring& code) {
     i18n::SetChoice(code);
@@ -478,9 +312,7 @@ void SetBrandColors(bool on) {
 void ToggleHidden(const std::wstring& key) {
     if (!HiddenKeys().erase(key)) HiddenKeys().insert(key);
     SaveHidden();
-    auto it = g_entries.find(key);
-    if (it != g_entries.end()) ApplyEntry(it->second);
-    UpdatePlaceholder();
+    UpdateTrayIcon();
     UpdateWidget();
 }
 

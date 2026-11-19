@@ -146,7 +146,7 @@ unsupported collections/vendors, protocol-profile isolation, timeouts, stable ke
 deduplication without discarding a known percentage.
 
 The full application was built locally with MSVC C++17 and the Windows SDK, and `--list` / `--dump`
-were run against the actual mouse. The maintained MinGW build includes `rapoo.cpp` in `build.bat`;
+were run against the actual mouse. The maintained build includes `rapoo.cpp`;
 the Makefile discovers it automatically. MinGW itself was not installed in the test environment.
 
 ## Protocol sources

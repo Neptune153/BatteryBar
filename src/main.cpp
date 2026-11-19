@@ -32,8 +32,7 @@ HWND g_hwnd;
 HANDLE g_refreshEvt, g_stopEvt, g_worker;
 UINT g_taskbarCreatedMsg;
 bool g_lightTaskbar;
-bool g_wantWidget = true;      // user's choice: taskbar widget (default) or tray icons
-bool g_useWidget = false;      // what is actually shown right now
+bool g_useWidget = false;      // the taskbar widget is alive right now
 bool g_hideLastKnown = false;  // hide (last known) / asleep devices from taskbar and tray
 std::wstring g_widgetMonitor = L"all";  // which taskbars show the widget: "all", "main" or one monitor id
 int g_widgetBackground = 0;  // opacity (0-100 %) of the plate behind the taskbar text, 0 = none
@@ -44,8 +43,7 @@ bool g_widgetFailNotified = false;  // that hint is shown once per run
 bool g_stacked = false;      // icon above the percentage (menu option)
 bool g_brandColors = false;  // off by default; known brands get their color (Razer green, Logitech blue, ...)
 std::map<std::wstring, TrayEntry> g_entries;
-bool g_placeholder = false;
-HICON g_placeholderIcon = nullptr;
+bool g_trayIconAdded = false;  // the one tray icon (the menu) is in the notification area
 bool g_demo = false;  // `--demo`: sample devices instead of real ones (see worker.cpp)
 
 // ---- window procedure -------------------------------------------------------------------------
@@ -113,11 +111,7 @@ LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wParam, LPARAM lParam) {
             widget::Destroy();
             SetEvent(g_stopEvt);
             if (g_worker) WaitForSingleObject(g_worker, 5000);
-            for (auto& [k, e] : g_entries) {
-                if (e.added) RemoveTrayIcon(e.uid);
-                if (e.icon) DestroyIcon(e.icon);
-            }
-            if (g_placeholder) RemoveTrayIcon(PLACEHOLDER_ID);
+            if (g_trayIconAdded) RemoveTrayIcon(kMenuIconId);
             PostQuitMessage(0);
             return 0;
     }
@@ -187,7 +181,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR cmdLine, int) {
 
     g_refreshEvt = CreateEventW(nullptr, FALSE, FALSE, nullptr);
     g_stopEvt = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-    g_wantWidget = LoadWidgetMode();
+
     g_hideLastKnown = LoadHideLastKnown();
     settings::MigrateFromOldName();
     g_widgetBackground = LoadWidgetBackground();
@@ -201,7 +195,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR cmdLine, int) {
     LoadHidden();
     LoadOrder();
     Reconcile();
-    UpdatePlaceholder();  // something to click on until the first poll finishes
+    RebuildTrayIcons();  // the tray icon is the way into the menu, so it is there from the start
     SetTimer(g_hwnd, TIMER_WIDGET, 1000, nullptr);
     g_worker = CreateThread(nullptr, 0, Worker, nullptr, 0, nullptr);
 

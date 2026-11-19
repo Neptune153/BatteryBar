@@ -33,8 +33,6 @@ void SaveBoolSetting(const wchar_t* name, bool on);
 int LoadIntSetting(const wchar_t* name, int defaultValue);
 void SaveIntSetting(const wchar_t* name, int value);
 
-bool LoadWidgetMode();
-void SaveWidgetMode(bool on);
 bool LoadHideLastKnown();
 void SaveHideLastKnown(bool on);
 int LoadWidgetBackground();
