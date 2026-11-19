@@ -43,8 +43,7 @@
 
 ## 安装
 
-- **安装程序**：`dist\BatteryBar-Setup-<版本>.exe`（生成方法见 `packaging/README.md`）。安装向导可自选目标目录，
-  默认 `%LOCALAPPDATA%\Programs\BatteryBar`；同时创建开始菜单快捷方式、登记到「应用和功能」、提供卸载项。
+- **安装程序**：`dist\BatteryBar-Setup-<版本>.exe`（生成方法见 `packaging/README.md`）。安装向导可自选目标目录；同时创建开始菜单快捷方式、登记到「应用和功能」、提供卸载项。
 - **免安装**：`build\BatteryBar.exe` 可直接运行；
 - **开机自启**：菜单项「开机启动」。
 

@@ -1,40 +1,114 @@
-# packaging
+# BatteryBar 打包教程
 
-安装包的两个生成入口，产物输出到 `dist/`。
+这个目录负责把 `build\BatteryBar.exe` 变成安装包。有两种方式，**二选一**：
 
-## build-local.ps1
+| 方式 | 脚本 | 产物 |
+| --- | --- | --- |
+| 标准 Windows 安装向导 | `build-inno.ps1` | `dist\BatteryBar-Setup-<版本>.exe` |
+| 压缩包安装版| `build-local.ps1` | `dist\BatteryBar-Setup-<版本>.zip` |
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File packaging\build-local.ps1 -Version 1.0.0
-```
 
-输出 `dist\BatteryBar-Setup-<版本>.zip`。不依赖 Inno Setup，也不需要网络访问。
+---
 
-| 包内文件 | 说明 |
-| --- | --- |
-| `BatteryBar.exe` | 主程序，取自 `build\`（`make` 的产物） |
-| `headsetcontrol.exe` | 可选，额外的耳机支持，取自 `third_party\` 或既有安装目录 |
-| `install.bat` / `install.ps1` | 安装 |
-| `uninstall.bat` / `uninstall.ps1` | 卸载 |
-| `README.txt` | 使用者说明 |
+## 第 0 步：先构建主程序
 
-安装行为：复制到 `%LOCALAPPDATA%\Programs\BatteryBar`，创建开始菜单快捷方式，写入
-`HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\BatteryBar`。卸载保留用户设置。
-
-## build-inno.ps1
+打包脚本不会替你编译。先在仓库根目录构建：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File packaging\build-inno.ps1 -Version 1.0.0
+cd 安装目录
+make
 ```
 
-依赖 Inno Setup 6 或 7（`ISCC.exe`）。HeadsetControl 优先取 `third_party\headsetcontrol\headsetcontrol.exe`，
-缺失时下载 4.3.0 并校验 SHA-256。
-输出 `dist\BatteryBar-Setup-<版本>.exe`。安装脚本为 `BatteryBar.iss`，`Root` 与 `AppVersion` 由该脚本通过`/D` 传入；
-默认目标目录是 `%LOCALAPPDATA%\Programs\BatteryBar`，安装向导显示目录页，可以改成其他位置。
+构建完成后确认产物存在，并且能正常列出设备：
 
-## 约束
+```powershell
+build\BatteryBar.exe --list
+```
+---
 
-- 所有 `.ps1` 保存为 UTF-8 with BOM。Windows PowerShell 5.1 在无 BOM 时按 ANSI 解析，中文会导致
-  语法错误（`Missing closing '}'`）。
-- 程序未签名，首次运行触发 SmartScreen 提示。
-- 分发安装包时同时提供 `THIRD_PARTY_NOTICES.txt`。
+## 方式 1：生成压缩包安装版
+
+不生成 `.exe` 安装程序，而是生成一个 zip，解压后双击 `install.bat` 安装。
+
+### 执行打包
+
+在仓库根目录运行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging\build-local.ps1 
+```
+
+### 检查产物
+
+```powershell
+Get-ChildItem dist
+```
+
+应该看到：
+
+```text
+dist\BatteryBar-Setup-<版本>.zip
+```
+
+zip 里的  `BatteryBar.exe`  即为主程序
+
+---
+
+
+## 方式 2：生成标准安装包
+
+适合正式发给用户：有安装向导、开始菜单快捷方式、卸载项和可选的开机自启。
+
+###  安装 Inno Setup
+
+安装 **Inno Setup 6 或 7**：<https://jrsoftware.org/isdl.php>
+
+装完后 `ISCC.exe` 通常在这些位置之一，脚本会自动查找：
+
+```text
+C:\Program Files (x86)\Inno Setup 6\ISCC.exe
+C:\Program Files\Inno Setup 7\ISCC.exe
+```
+
+如果脚本提示 `Inno Setup not found`，先确认安装的是 6 或 7，再重新打开 PowerShell。
+
+### 执行打包
+
+在仓库根目录运行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging\build-inno.ps1
+```
+
+
+脚本会依次做这些事：
+
+1. 检查 `third_party\headsetcontrol\headsetcontrol.exe`；没有就下载 HeadsetControl 4.3.0，并校验 SHA-256。**这一步需要联网。**
+2. 检查 `build\BatteryBar.exe` 是否存在。
+3. 找到 `ISCC.exe`，把版本号通过 `/DAppVersion=...` 传给 [BatteryBar.iss](BatteryBar.iss)。
+4. 在 `dist\` 生成安装包。
+
+###  检查产物
+
+```powershell
+Get-ChildItem dist
+```
+
+应该看到：
+
+```text
+dist\BatteryBar-Setup-1.0.1.exe
+```
+
+双击安装包，按向导走一遍。安装程序的行为：
+
+- **默认按当前用户安装**：装到 `%LOCALAPPDATA%\Programs\BatteryBar`，不需要管理员权限。
+- 安装向导里有目录页，可以改路径；如果当前账户对目标目录没有写权限，安装程序会拦下并提示换目录。
+- 也支持“为所有用户安装”，这时需要管理员权限，默认目录会变成 `Program Files`。
+- 创建开始菜单快捷方式，登记到“应用和功能”，并提供卸载项。
+- 安装向导里的“开机启动”任务默认勾选；安装完成后会自动启动 BatteryBar。
+- 升级安装时，会先让正在运行的旧版本退出，再覆盖文件。
+
+> 安装包没有代码签名，首次运行会触发 SmartScreen“未知发布者”。点“更多信息 → 仍要运行”即可。
+
+---
