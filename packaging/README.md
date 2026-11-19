@@ -1,11 +1,11 @@
-# installer
+# packaging
 
 安装包的两个生成入口，产物输出到 `dist/`。
 
 ## build-local.ps1
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File installer\build-local.ps1 -Version 1.0.0
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging\build-local.ps1 -Version 1.0.0
 ```
 
 输出 `dist\BatteryBar-Setup-<版本>.zip`。不依赖 Inno Setup，也不需要网络访问。
@@ -24,7 +24,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File installer\build-local.ps1 -V
 ## build-inno.ps1
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File installer\build-inno.ps1 -Version 1.0.0
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging\build-inno.ps1 -Version 1.0.0
 ```
 
 依赖 Inno Setup 6 或 7（`ISCC.exe`）。HeadsetControl 优先取 `third_party\headsetcontrol\headsetcontrol.exe`，

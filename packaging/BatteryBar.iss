@@ -1,7 +1,7 @@
 ; Inno Setup script for BatteryBar (https://jrsoftware.org/isinfo.php).
 ; Per-user install by default: no administrator rights needed, installs to %LOCALAPPDATA%\Programs.
 ; Setup also offers "Install for all users" (Program Files, needs administrator rights).
-; Build with installer\build-inno.ps1 (or: ISCC /DAppVersion=1.2.3 installer\BatteryBar.iss).
+; Build with packaging\build-inno.ps1 (or: ISCC /DAppVersion=1.2.3 packaging\BatteryBar.iss).
 
 #ifndef AppVersion
   #define AppVersion "1.0.0"
@@ -24,7 +24,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 OutputDir={#Root}\dist
 OutputBaseFilename=BatteryBar-Setup-{#AppVersion}
-SetupIconFile={#Root}\res\app.ico
+SetupIconFile={#Root}\resources\app.ico
 UninstallDisplayIcon={app}\BatteryBar.exe
 UninstallDisplayName=BatteryBar
 Compression=lzma2/max
@@ -39,7 +39,7 @@ Name: "autostart"; Description: "Start BatteryBar when I sign in to Windows"
 Source: "{#Root}\build\BatteryBar.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Root}\third_party\headsetcontrol\headsetcontrol.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Root}\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
-Source: "{#Root}\installer\THIRD_PARTY_NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#Root}\packaging\THIRD_PARTY_NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\BatteryBar"; Filename: "{app}\BatteryBar.exe"

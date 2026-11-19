@@ -1,5 +1,5 @@
-﻿# 生成可以直接双击安装的压缩包（不需要 Inno Setup、不需要联网）。
-# 用法：powershell -NoProfile -File installer\build-local.ps1 [-Version 1.0.0]
+# 生成可以直接双击安装的压缩包（不需要 Inno Setup、不需要联网）。
+# 用法：powershell -NoProfile -File packaging\build-local.ps1 [-Version 1.0.0]
 # 产物：dist\BatteryBar-Setup-<版本>.zip
 param([string]$Version = '1.0.0')
 
